@@ -71,22 +71,12 @@ values  ('0002', 'D01   ', 'RECTORADO', 10031),
 
 
 ----fuente
-insert into bytsscom_bytcore.fuente (id_fuente, siaf_codigo, desc_fuente)
-values  (3, '13', 'Donaciones y Transferencias'),
-        (6, '19', 'Recursos por Operaciones Oficiales De Crédito'),
-        (1, '00', 'Recursos Ordinarios'),
-        (4, '88', 'No Presupuestal'),
-        (5, '18', 'Recursos Determinados'),
-        (21, '18', 'SALDOS ANTIGUOS'),
-        (20, '18', 'REGALIAS MINERAS'),
-        (19, '18', 'CANON PESQUERO'),
-        (18, '18', 'CANON FORESTAL'),
-        (17, '18', 'CANON HIDROENERGETICO'),
-        (16, '13', 'DONACIONES Y TRANSFERENCIAS'),
-        (15, '13', 'DONACIONES Y TRANSFERENCIAS'),
-        (14, '13', 'DONACIONES Y TRANSFERENCIAS'),
-        (10, '18', 'CANON MINERO'),
-        (2, '09', 'Recursos Directamente Recaudados');
+insert into sistema_informacion_gerencial.dm_fuente (fuente_siaf, desc_fuente)
+values  ( '13', 'Donaciones y Transferencias'),
+
+        ('00', 'Recursos Ordinarios'),
+
+        ( '09', 'Recursos Directamente Recaudados');
 
 ----generica
 
