@@ -75,30 +75,27 @@ alter table sistema_informacion_gerencial.hechos_institucional_consolidados
 create table if not exists sistema_informacion_gerencial.dm_certificado
 (
     ano_eje             integer,
-    id_certificacion    varchar,
-    num_certificado     varchar,
-    area_siaf           varchar,
+    num_certificado     varchar
+        constraint dm_certificado_hechos_institucional_consolidados_num_certificad
+            references sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado),
+    cod_siaf_area             integer,
     secuencia           varchar,
-    sys_id_fuente       integer,
+    siaf_id_fuente       integer,
     fuente              varchar,
-    sys_id_generica     integer,
     generica            varchar,
-    sys_id_clasificador integer,
+    siaf_id_clasificador integer,
     clasificador        varchar,
     cod_doc             varchar,
     num_doc             varchar,
     glosa               varchar,
-    sys_tipo_cert       varchar,
     monto_nacional      numeric(19, 2),
     monto_clasificador  numeric(19, 2),
     estado_envio        varchar,
     estado_registro     varchar,
     fecha_creacion_clt  date,
-    meta                varchar,
-    sec_func            varchar,
-    nomb_met_ins        varchar,
-    constraint dm_certificado_hechos_institucional_consolidados_anio_num_certi
-        foreign key (ano_eje, num_certificado) references sistema_informacion_gerencial.hechos_institucional_consolidados ()
+    idmeta                varchar,
+    codmeta            varchar,
+    nomb_met_ins        varchar
 );
 
 alter table sistema_informacion_gerencial.dm_certificado
@@ -122,7 +119,7 @@ create table if not exists sistema_informacion_gerencial.dm_expediente
     fecha_autorizacion    date,
     certificado_secuencia varchar,
     constraint dm_expediente_hechos_institucional_consolidados_anio_num_certif
-        foreign key (ano_eje, certificado) references sistema_informacion_gerencial.hechos_institucional_consolidados ()
+        foreign key (ano_eje, certificado) references sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado, anio)
 );
 
 alter table sistema_informacion_gerencial.dm_expediente
