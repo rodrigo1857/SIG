@@ -49,6 +49,14 @@ SELECT
     where id_fuente<4
    order by siaf_codigo;
 
+---- dm-generica
+select
+    id_clasificador,
+    cod_clasif as cod_generica,
+    desc_clasif as nomb_generica
+from bytsscom_bytcore.clasificador
+ where id_nivel = 2;
+
 --- hechos_consolidados
 
 WITH certificado_anio_area AS(
