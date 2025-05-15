@@ -125,10 +125,9 @@ alter table sistema_informacion_gerencial.dm_expediente
 -------7
 create table if not exists sistema_informacion_gerencial.hechos_pim
 (
-    id_area         integer        not null
+    cod_siaf_area   varchar       not null
         constraint hechos_pim__area_fk
             references sistema_informacion_gerencial.dm_area,
-    cod_siaf_area   varchar        not null,
     id_clasificador varchar        not null,
     id_fuente       integer        not null,
     monto_pia       numeric(19, 2) not null,
