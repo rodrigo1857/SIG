@@ -74,28 +74,28 @@ alter table sistema_informacion_gerencial.hechos_institucional_consolidados
 -------5
 create table if not exists sistema_informacion_gerencial.dm_certificado
 (
-    ano_eje             integer,
-    num_certificado     varchar
-        constraint dm_certificado_hechos_institucional_consolidados_num_certificad
-            references sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado),
-    cod_siaf_area             integer,
-    secuencia           varchar,
+    ano_eje              integer,
+    num_certificado      varchar,
+    cod_siaf_area        integer,
+    secuencia            varchar,
     siaf_id_fuente       integer,
-    fuente              varchar,
-    generica            varchar,
-    siaf_id_clasificador integer,
-    clasificador        varchar,
-    cod_doc             varchar,
-    num_doc             varchar,
-    glosa               varchar,
-    monto_nacional      numeric(19, 2),
-    monto_clasificador  numeric(19, 2),
-    estado_envio        varchar,
-    estado_registro     varchar,
-    fecha_creacion_clt  date,
-    idmeta                varchar,
-    codmeta            varchar,
-    nomb_met_ins        varchar
+    fuente               varchar,
+    generica             varchar,
+    siaf_id_clasificador varchar,
+    clasificador         varchar,
+    cod_doc              varchar,
+    num_doc              varchar,
+    glosa                varchar,
+    monto_nacional       numeric(19, 2),
+    monto_clasificador   numeric(19, 2),
+    estado_envio         varchar,
+    estado_registro      varchar,
+    fecha_creacion_clt   date,
+    idmeta               varchar,
+    codmeta              varchar,
+    nomb_met_ins         varchar,
+    constraint dm_certificado_hechos_institucional_consolidados_anio_num_certi
+        foreign key (ano_eje, num_certificado) references sistema_informacion_gerencial.hechos_institucional_consolidados ()
 );
 
 alter table sistema_informacion_gerencial.dm_certificado
