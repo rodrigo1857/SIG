@@ -10,25 +10,23 @@ SET search_path TO sistema_informacion_gerencial;
 create table if not exists sistema_informacion_gerencial.dm_area
 (
     cod_siaf_area     varchar not null
-        constraint dm_area_pk_2
-            unique,
+        constraint dm_area_pk
+            primary key,
     area_name         char(6) not null,
     area_display_name varchar not null,
-    id_area           integer not null
-        constraint dm_area_pk
-            primary key
+    is_central        integer
 );
 
 alter table sistema_informacion_gerencial.dm_area
     owner to postgres;
 
+
 ----------2
 create table if not exists sistema_informacion_gerencial.dm_fuente
 (
-    id_fuente   integer not null
+    fuente_siaf varchar not null
         constraint dm_fuente_pk
             primary key,
-    fuente_siaf char(4) not null,
     desc_fuente varchar not null
 );
 
@@ -36,8 +34,8 @@ alter table sistema_informacion_gerencial.dm_fuente
     owner to postgres;
 
 
--------3
 
+-------3
 create table if not exists sistema_informacion_gerencial.dm_generica
 (
     id_generica   integer not null
@@ -56,8 +54,8 @@ create table if not exists sistema_informacion_gerencial.hechos_institucional_co
 (
     cod_siaf_area   varchar        not null
         constraint hechos_institucional_consolidados_dm_area_cod_siaf_area_fk
-            references sistema_informacion_gerencial.dm_area (cod_siaf_area),
-    id_fuente       integer        not null
+            references sistema_informacion_gerencial.dm_area,
+    fuente_siaf     varchar        not null
         constraint hechos_institucional_consolidados_dm_fuente_id_fuente_fk
             references sistema_informacion_gerencial.dm_fuente,
     num_certificado varchar        not null
@@ -70,6 +68,7 @@ create table if not exists sistema_informacion_gerencial.hechos_institucional_co
 alter table sistema_informacion_gerencial.hechos_institucional_consolidados
     owner to postgres;
 
+
 -------5
 create table if not exists sistema_informacion_gerencial.dm_certificado
 (
@@ -80,16 +79,14 @@ create table if not exists sistema_informacion_gerencial.dm_certificado
             references sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado),
     id_area             integer,
     secuencia           varchar,
-    sys_id_fuente       integer,
+    siaf_id_fuente       integer,
     fuente              varchar,
-    sys_id_generica     integer,
     generica            varchar,
-    sys_id_clasificador integer,
+    siaf_id_clasificador integer,
     clasificador        varchar,
     cod_doc             varchar,
     num_doc             varchar,
     glosa               varchar,
-    sys_tipo_cert       varchar,
     monto_nacional      numeric(19, 2),
     monto_clasificador  numeric(19, 2),
     estado_envio        varchar,
