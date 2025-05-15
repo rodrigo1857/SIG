@@ -59,54 +59,57 @@ create table if not exists sistema_informacion_gerencial.hechos_institucional_co
     fuente_siaf     varchar        not null
         constraint hechos_institucional_consolidados_dm_fuente_id_fuente_fk
             references sistema_informacion_gerencial.dm_fuente,
-    num_certificado varchar        not null
-        constraint hechos_institucional_consolidados_pk
-            unique,
+    num_certificado varchar        not null,
     anio            integer        not null,
-    monto           numeric(19, 2) not null
+    monto           numeric(19, 2) not null,
+    constraint hechos_institucional_consolidados_pk
+        unique (num_certificado, anio)
 );
 
 alter table sistema_informacion_gerencial.hechos_institucional_consolidados
     owner to postgres;
 
 
+
 -------5
 create table if not exists sistema_informacion_gerencial.dm_certificado
 (
     ano_eje             integer,
-    num_certificado     varchar
-        constraint dm_certificado_hechos_institucional_consolidados_num_certificad
-            references sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado),
-    cod_siaf_area             integer,
+    id_certificacion    varchar,
+    num_certificado     varchar,
+    area_siaf           varchar,
     secuencia           varchar,
-    siaf_id_fuente       integer,
+    sys_id_fuente       integer,
     fuente              varchar,
+    sys_id_generica     integer,
     generica            varchar,
-    siaf_id_clasificador integer,
+    sys_id_clasificador integer,
     clasificador        varchar,
     cod_doc             varchar,
     num_doc             varchar,
     glosa               varchar,
+    sys_tipo_cert       varchar,
     monto_nacional      numeric(19, 2),
     monto_clasificador  numeric(19, 2),
     estado_envio        varchar,
     estado_registro     varchar,
     fecha_creacion_clt  date,
-    idmeta                varchar,
-    codmeta            varchar,
-    nomb_met_ins        varchar
+    meta                varchar,
+    sec_func            varchar,
+    nomb_met_ins        varchar,
+    constraint dm_certificado_hechos_institucional_consolidados_anio_num_certi
+        foreign key (ano_eje, num_certificado) references sistema_informacion_gerencial.hechos_institucional_consolidados ()
 );
 
 alter table sistema_informacion_gerencial.dm_certificado
     owner to postgres;
+
 -------6
 create table if not exists sistema_informacion_gerencial.dm_expediente
 (
     ano_eje               integer not null,
     sec_ejec              char(6),
-    certificado           varchar
-        constraint dm_expediente_certificado__fk
-            references sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado),
+    certificado           varchar,
     expediente            varchar,
     ciclo                 varchar,
     fase                  varchar,
@@ -117,11 +120,14 @@ create table if not exists sistema_informacion_gerencial.dm_expediente
     monto_nacional        numeric(19, 2),
     monto_saldo           numeric(19, 2),
     fecha_autorizacion    date,
-    certificado_secuencia varchar
+    certificado_secuencia varchar,
+    constraint dm_expediente_hechos_institucional_consolidados_anio_num_certif
+        foreign key (ano_eje, certificado) references sistema_informacion_gerencial.hechos_institucional_consolidados ()
 );
 
 alter table sistema_informacion_gerencial.dm_expediente
     owner to postgres;
+
 -------7
 create table if not exists sistema_informacion_gerencial.hechos_pim
 (
