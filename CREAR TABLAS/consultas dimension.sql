@@ -1,7 +1,7 @@
 
+-- dm_area
 
---------- dm_area
-
+---------
 
 
 select
@@ -40,17 +40,43 @@ select
     , 2 as is_central;
 
 
-
----------dm_fuente
+-- dm_fuente
 
 SELECT
-    siaf_codigo,
+    siaf_codigo as fuente_siaf,
     desc_fuente
     FROM bytsscom_bytcore.fuente
     where id_fuente<4
    order by siaf_codigo;
 
+--- hechos_consolidados
 
+WITH certificado_anio_area AS(
+     SELECT DISTINCT
+        c.siaf_certificado,
+        cert.ano_eje,
+        a.cod_siaf_area
+    FROM bytsscom_bytsig.vw_certificacion c
+             INNER JOIN bytsscom_bytsig.memo_requerimiento m
+                        ON c.id_memo_requerimiento = m.id_memo_requerimiento
+             INNER JOIN bytsscom_bytsiaf.certificado cert
+                        ON c.id_anio::varchar = cert.ano_eje
+                            AND c.siaf_certificado = cert.certificado
+             INNER JOIn bytsscom_bytcore.area a
+                        ON a.id_area = m.id_area
+    WHERE c.esta_cert = 'A'
+)
+SELECT
+    cf.ano_eje as anio,
+    certificado as num_certificado,
+    coalesce( caa.cod_siaf_area,'0000') as cod_siaf_area,
+    fuente_financ as fuente_siaf,
+    monto
+    FROM bytsscom_bytsiaf.certificado_fase  cf
+    left join certificado_anio_area caa
+        on caa.siaf_certificado = cf.certificado and caa.ano_eje = cf.ano_eje
+    WHERE es_compromiso = 'N' and estado_registro = 'A' and secuencia = '0001'
+group by cf.ano_eje, certificado, monto,fuente_financ,caa.cod_siaf_area;
 
 ----- dm_certificado
 
@@ -73,12 +99,12 @@ SELECT
     cert.ano_eje as ano_eje,
     cert.certificado as num_certificado,
     cf.secuencia,
-    f.siaf_codigo,
+    f.siaf_codigo as siaf_id_fuente,
     f.abre_fuente as fuente,
     cs.cod_doc,
     cs.num_doc,
-    cla.codigo_siaf,
-    cla.cod_clasif,
+    cla.codigo_siaf as siaf_id_clasificador,
+    cla.cod_clasif clasificador,
     substr(cla.cod_clasif,0,3) as generica,
     mis.id_meta_institucional as idmeta,
     mis.sec_func as codmeta,
@@ -124,33 +150,3 @@ GROUP BY cert.ano_eje,
          mis.sec_func,
          mp.nomb_met_ins,
          areas.cod_siaf_area
-
-
---------- hechos_consolidados
-
-WITH certificado_anio_area AS(
-     SELECT DISTINCT
-        c.siaf_certificado,
-        cert.ano_eje,
-        a.cod_siaf_area
-    FROM bytsscom_bytsig.vw_certificacion c
-             INNER JOIN bytsscom_bytsig.memo_requerimiento m
-                        ON c.id_memo_requerimiento = m.id_memo_requerimiento
-             INNER JOIN bytsscom_bytsiaf.certificado cert
-                        ON c.id_anio::varchar = cert.ano_eje
-                            AND c.siaf_certificado = cert.certificado
-             INNER JOIn bytsscom_bytcore.area a
-                        ON a.id_area = m.id_area
-    WHERE c.esta_cert = 'A'
-)
-SELECT
-    cf.ano_eje,
-    certificado,
-    coalesce( caa.cod_siaf_area,'0000') as cod_siaf_area,
-    fuente_financ,
-    monto
-    FROM bytsscom_bytsiaf.certificado_fase  cf
-    left join certificado_anio_area caa
-        on caa.siaf_certificado = cf.certificado and caa.ano_eje = cf.ano_eje
-    WHERE es_compromiso = 'N' and estado_registro = 'A' and secuencia = '0001'
-group by cf.ano_eje, certificado, monto,fuente_financ,caa.cod_siaf_area;

@@ -14,7 +14,8 @@ create table if not exists sistema_informacion_gerencial.dm_area
             primary key,
     area_name         char(6) not null,
     area_display_name varchar not null,
-    is_central        integer
+    id_area integer ,
+    is_central integer
 );
 
 alter table sistema_informacion_gerencial.dm_area
@@ -73,11 +74,10 @@ alter table sistema_informacion_gerencial.hechos_institucional_consolidados
 create table if not exists sistema_informacion_gerencial.dm_certificado
 (
     ano_eje             integer,
-    id_certificacion    varchar,
     num_certificado     varchar
         constraint dm_certificado_hechos_institucional_consolidados_num_certificad
             references sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado),
-    id_area             integer,
+    cod_siaf_area             integer,
     secuencia           varchar,
     siaf_id_fuente       integer,
     fuente              varchar,
@@ -92,8 +92,8 @@ create table if not exists sistema_informacion_gerencial.dm_certificado
     estado_envio        varchar,
     estado_registro     varchar,
     fecha_creacion_clt  date,
-    meta                varchar,
-    sec_func            varchar,
+    idmeta                varchar,
+    codmeta            varchar,
     nomb_met_ins        varchar
 );
 
