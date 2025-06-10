@@ -14,21 +14,23 @@ create table if not exists sistema_informacion_gerencial.dm_area
             primary key,
     area_name         char(6) not null,
     area_display_name varchar not null,
-    id_area integer ,
-    is_central integer
+    nivel             integer,
+    id_area           integer,
+    idsuperior        integer
 );
 
 alter table sistema_informacion_gerencial.dm_area
-    owner to postgres;
+    owner to postgres
 
 
 ----------2
+    
 create table if not exists sistema_informacion_gerencial.dm_fuente
 (
     fuente_siaf varchar not null
         constraint dm_fuente_pk
             primary key,
-    desc_fuente varchar not null
+    desc_fuente varchar not null,
 );
 
 alter table sistema_informacion_gerencial.dm_fuente
@@ -76,9 +78,9 @@ create table if not exists sistema_informacion_gerencial.dm_certificado
 (
     ano_eje              integer,
     num_certificado      varchar,
-    cod_siaf_area        integer,
+    cod_siaf_area        varchar,
     secuencia            varchar,
-    siaf_id_fuente       integer,
+    siaf_id_fuente       varchar,
     fuente               varchar,
     generica             varchar,
     siaf_id_clasificador varchar,
@@ -119,32 +121,30 @@ create table if not exists sistema_informacion_gerencial.dm_expediente
     fecha_autorizacion    date,
     certificado_secuencia varchar,
     constraint dm_expediente_hechos_institucional_consolidados_anio_num_certif
-        foreign key (ano_eje, certificado) references sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado, anio)
+        foreign key (ano_eje, certificado) references sistema_informacion_gerencial.hechos_institucional_consolidados ()
 );
 
 alter table sistema_informacion_gerencial.dm_expediente
     owner to postgres;
-
 -------7
 create table if not exists sistema_informacion_gerencial.hechos_pim
 (
-    cod_siaf_area   varchar       not null
-        constraint hechos_pim__area_fk
-            references sistema_informacion_gerencial.dm_area,
-    id_clasificador varchar        not null,
-    id_fuente       integer        not null,
-    monto_pia       numeric(19, 2) not null,
-    monto_pim       numeric(19, 2) not null,
-    id_anio         integer        not null,
-    generica        varchar,
-    clasificador    varchar,
-    id_generica     integer
+    id_area        integer,
+    cod_siaf_area  varchar,
+    id_fuente      integer        not null,
+    monto_pia      numeric(19, 2) not null,
+    monto_pim      numeric(19, 2) not null,
+    id_periodo_pla integer        not null,
+    generica       varchar,
+    id_generica    integer
         constraint hechos_pim_dm_generica_id_generica_fk
-            references sistema_informacion_gerencial.dm_generica
+            references sistema_informacion_gerencial.dm_generica,
+    fuente_siaf    varchar
 );
 
 alter table sistema_informacion_gerencial.hechos_pim
     owner to postgres;
+
 -------8
 create table if not exists sistema_informacion_gerencial.vw_obras_materializada
 (
