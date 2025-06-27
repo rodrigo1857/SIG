@@ -30,7 +30,7 @@ create table if not exists sistema_informacion_gerencial.dm_fuente
     fuente_siaf varchar not null
         constraint dm_fuente_pk
             primary key,
-    desc_fuente varchar not null,
+    desc_fuente varchar not null
 );
 
 alter table sistema_informacion_gerencial.dm_fuente
