@@ -97,7 +97,6 @@ CREATE TABLE IF NOT EXISTS hechos_institucional_consolidados (
     num_certificado VARCHAR NOT NULL,
     anio            INTEGER NOT NULL,
     monto           NUMERIC(19,2) NOT NULL,
-    PRIMARY KEY (num_certificado, anio)
 )
 PARTITION BY LIST (anio);
 ALTER TABLE hechos_institucional_consolidados OWNER TO postgres;
