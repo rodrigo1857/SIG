@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS dm_expediente (
     cod_doc               VARCHAR,
     num_doc               VARCHAR,
     estado_envio          VARCHAR,
-    siaf_id_clasificador  VARCHAR,
+    siaf_id_clasificador  VARCHAR
 )
 PARTITION BY LIST (ano_eje);
 ALTER TABLE dm_expediente OWNER TO postgres;
