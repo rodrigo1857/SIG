@@ -6,6 +6,12 @@ SET search_path TO sistema_informacion_gerencial;
 
 ---- creacion de las tablas
 
+
+----- creacion del nuevo esquema
+create schema if not exists sistema_informacion_gerencial;
+
+--- ubicacion del esquema
+SET search_path TO sistema_informacion_gerencial;
 create table if not exists sistema_informacion_gerencial.dm_area
 (
     area_siaf   varchar not null
@@ -129,7 +135,6 @@ alter table sistema_informacion_gerencial.dm_pim
     owner to postgres;
 
 
-
 create table if not exists sistema_informacion_gerencial.dm_certificado
 (
     anio                integer not null,
@@ -161,15 +166,13 @@ create table if not exists sistema_informacion_gerencial.dm_certificado
     constraint dm_certificado_pk
         primary key (anio, num_certificado, secuencia, correlativo, idmeta, idclasificador_siaf),
     constraint dm_certificado_hechos_institucional_consolidados_num_certificad
-        foreign key (num_certificado, anio) references sistema_informacion_gerencial.hechos_institucional_consolidados (),
-    foreign key (num_certificado, anio) references sistema_informacion_gerencial.hechos_institucional_consolidados_2024 (),
-    constraint dm_certificado_num_certificado_anio_fkey1
-        foreign key (num_certificado, anio) references sistema_informacion_gerencial.hechos_institucional_consolidados_2025 ()
+        foreign key (num_certificado, anio) references sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado, anio)
 )
     partition by LIST (anio);
 
 alter table sistema_informacion_gerencial.dm_certificado
     owner to postgres;
+
 
 
 -------8
