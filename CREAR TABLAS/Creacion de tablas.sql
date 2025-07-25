@@ -5,7 +5,7 @@ create schema if not exists sistema_informacion_gerencial;
 SET search_path TO sistema_informacion_gerencial;
 
 ---- creacion de las tablas
-
+-------1
 create table if not exists sistema_informacion_gerencial.dm_area
 (
     area_siaf   varchar not null
@@ -20,7 +20,7 @@ create table if not exists sistema_informacion_gerencial.dm_area
 
 alter table sistema_informacion_gerencial.dm_area
     owner to postgres;
-
+-------2
 create table if not exists sistema_informacion_gerencial.dm_fuente
 (
     fuente_siaf varchar not null
@@ -31,7 +31,7 @@ create table if not exists sistema_informacion_gerencial.dm_fuente
 
 alter table sistema_informacion_gerencial.dm_fuente
     owner to postgres;
-
+-------3
 create table if not exists sistema_informacion_gerencial.dm_generica
 (
     id_generica   integer not null,
@@ -43,7 +43,7 @@ create table if not exists sistema_informacion_gerencial.dm_generica
 
 alter table sistema_informacion_gerencial.dm_generica
     owner to postgres;
-
+-------4
 create table if not exists sistema_informacion_gerencial.hechos_institucional_consolidados
 (
     area_siaf              varchar        not null
@@ -67,11 +67,10 @@ create table if not exists sistema_informacion_gerencial.hechos_institucional_co
 
 alter table sistema_informacion_gerencial.hechos_institucional_consolidados
     owner to postgres;
-
+-------5
 create table if not exists sistema_informacion_gerencial.dm_pim
 (
     anio          integer        not null,
-    id_fuente     integer        not null,
     fuente_siaf   varchar        not null,
     id_area       integer,
     area_siaf     varchar,
@@ -83,7 +82,7 @@ create table if not exists sistema_informacion_gerencial.dm_pim
 
 alter table sistema_informacion_gerencial.dm_pim
     owner to postgres;
-
+-------6
 create table if not exists sistema_informacion_gerencial.hechos_pim
 (
     anio          integer not null,
@@ -98,7 +97,7 @@ create table if not exists sistema_informacion_gerencial.hechos_pim
 alter table sistema_informacion_gerencial.hechos_pim
     owner to postgres;
 
-
+-------7
 create table if not exists sistema_informacion_gerencial.dm_certificado
 (
     id_hecho_institucional bigint,
@@ -129,7 +128,7 @@ create table if not exists sistema_informacion_gerencial.dm_certificado
 
 alter table sistema_informacion_gerencial.dm_certificado
     owner to postgres;
-
+-------8
 create table if not exists sistema_informacion_gerencial.dm_expediente
 (
     anio                   integer not null,
@@ -159,7 +158,7 @@ create table if not exists sistema_informacion_gerencial.dm_expediente
 alter table sistema_informacion_gerencial.dm_expediente
     owner to postgres;
 
--------8
+-------9
 create table if not exists sistema_informacion_gerencial.vw_obras_materializada
 (
     id_area_usuaria   integer,
@@ -185,7 +184,7 @@ create table if not exists sistema_informacion_gerencial.vw_obras_materializada
 
 alter table sistema_informacion_gerencial.vw_obras_materializada
     owner to postgres;
--------9
+-------10
 create table if not exists sistema_informacion_gerencial.hechos_rrhh_consolidados
 (
     tipo            varchar        not null,
@@ -202,3 +201,30 @@ create table if not exists sistema_informacion_gerencial.hechos_rrhh_consolidado
 
 alter table sistema_informacion_gerencial.hechos_rrhh_consolidados
     owner to postgres;
+
+-----
+CREATE MATERIALIZED VIEW vm_dm_area AS SELECT * FROM sistema_informacion_gerencial.dm_area;
+CREATE UNIQUE INDEX idx_vm_dm_area ON sistema_informacion_gerencial.vm_dm_area(area_siaf);
+
+CREATE MATERIALIZED VIEW vm_dm_fuente AS SELECT * FROM sistema_informacion_gerencial.dm_fuente;
+CREATE UNIQUE INDEX idx_vm_dm_fuente ON vm_dm_fuente(fuente_siaf);
+
+CREATE MATERIALIZED VIEW vm_dm_generica AS SELECT * FROM sistema_informacion_gerencial.dm_generica;
+CREATE UNIQUE INDEX idx_vm_dm_generica ON vm_dm_generica(generica_siaf);
+
+CREATE MATERIALIZED VIEW vm_hechos_institucional_consolidados AS SELECT * FROM sistema_informacion_gerencial.hechos_institucional_consolidados;
+CREATE UNIQUE INDEX idx_vm_hechos_institucional_consolidados ON vm_hechos_institucional_consolidados(id_hecho_institucional);
+
+CREATE MATERIALIZED VIEW vm_dm_certificado AS SELECT * FROM sistema_informacion_gerencial.dm_certificado;
+CREATE UNIQUE INDEX idx_vm_dm_certificado ON vm_dm_certificado(id_hecho_institucional,secuencia,correlativo,idclasificador_siaf,idmeta);
+
+CREATE MATERIALIZED VIEW vm_dm_expediente AS SELECT * FROM sistema_informacion_gerencial.dm_expediente;
+CREATE UNIQUE INDEX idx_vm_dm_expediente ON vm_dm_expediente(id_hecho_institucional,expediente,secuencia,correlativo,idclasificador_siaf);
+
+CREATE MATERIALIZED VIEW vm_hechos_pim AS SELECT * FROM sistema_informacion_gerencial.hechos_pim;
+CREATE UNIQUE INDEX idx_vm_hechos_pim ON vm_hechos_pim(anio,fuente_siaf,generica_siaf);
+
+CREATE MATERIALIZED VIEW vm_dm_pim AS SELECT * FROM sistema_informacion_gerencial.dm_pim;
+CREATE UNIQUE INDEX idx_vm_dm_pim ON vm_dm_pim(anio,id_area,fuente_siaf,generica_siaf);
+
+
