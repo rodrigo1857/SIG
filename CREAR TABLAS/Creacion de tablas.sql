@@ -201,6 +201,33 @@ create table if not exists sistema_informacion_gerencial.hechos_rrhh_consolidado
 
 alter table sistema_informacion_gerencial.hechos_rrhh_consolidados
     owner to postgres;
+create table if not exists sistema_informacion_gerencial.dm_clasificador
+(
+    idclasificador_siaf varchar,
+    generica            varchar,
+    clasificador        varchar,
+    descripcion         varchar,
+    fts_clasificador    tsvector generated always as (to_tsvector('spanish'::regconfig,
+                                                                  (((COALESCE(descripcion, ''::character varying))::text || ' '::text) ||
+                                                                   (COALESCE(clasificador, ''::character varying))::text))) stored
+);
+
+alter table sistema_informacion_gerencial.dm_clasificador
+    owner to postgres;
+
+
+
+create table if not exists sistema_informacion_gerencial.dm_pim_clasificador
+(
+    anio                integer,
+    fuente_siaf         varchar,
+    idclasificador_siaf varchar,
+    generica_siaf       varchar,
+    monto_pim           numeric(19, 2)
+);
+
+alter table sistema_informacion_gerencial.dm_pim_clasificador
+    owner to postgres;
 
 -----
 CREATE MATERIALIZED VIEW vm_dm_area AS SELECT * FROM sistema_informacion_gerencial.dm_area;
@@ -226,5 +253,87 @@ CREATE UNIQUE INDEX idx_vm_hechos_pim ON vm_hechos_pim(anio,fuente_siaf,generica
 
 CREATE MATERIALIZED VIEW vm_dm_pim AS SELECT * FROM sistema_informacion_gerencial.dm_pim;
 CREATE UNIQUE INDEX idx_vm_dm_pim ON vm_dm_pim(anio,id_area,fuente_siaf,generica_siaf);
+
+--------------------------------------
+create materialized view if not exists sistema_informacion_gerencial.vm_pim_clasificador as
+WITH devengado_x_clasificador AS (SELECT de.anio,
+                                         hic.fuente_siaf,
+                                         de.idclasificador_siaf,
+                                         sum(de.monto_nacional) AS monto_devengado
+                                  FROM sistema_informacion_gerencial.dm_expediente de
+                                           JOIN sistema_informacion_gerencial.hechos_institucional_consolidados hic
+                                                ON de.id_hecho_institucional = hic.id_hecho_institucional
+                                  GROUP BY de.anio, de.idclasificador_siaf, hic.fuente_siaf),
+     pim_x_clasificador AS (SELECT dpc.anio,
+                                   dpc.fuente_siaf,
+                                   dpc.generica_siaf,
+                                   dpc.idclasificador_siaf,
+                                   dcla.clasificador,
+                                   dcla.fts_clasificador,
+                                   dcla.descripcion,
+                                   dpc.monto_pim
+                            FROM sistema_informacion_gerencial.dm_pim_clasificador dpc
+                                     JOIN sistema_informacion_gerencial.dm_clasificador dcla
+                                          ON dpc.idclasificador_siaf::text = dcla.idclasificador_siaf::text)
+SELECT pxc.anio,
+       pxc.fuente_siaf,
+       pxc.idclasificador_siaf,
+       pxc.clasificador,
+       pxc.fts_clasificador,
+       pxc.generica_siaf,
+       pxc.descripcion,
+       pxc.monto_pim,
+       dxc.monto_devengado
+FROM pim_x_clasificador pxc
+         JOIN devengado_x_clasificador dxc ON pxc.anio = dxc.anio AND pxc.fuente_siaf::text = dxc.fuente_siaf::text AND
+                                              pxc.idclasificador_siaf::text = dxc.idclasificador_siaf::text
+WHERE pxc.monto_pim > 0::numeric;
+
+alter materialized view sistema_informacion_gerencial.vm_pim_clasificador owner to postgres;
+
+--------------------------------------------------------
+
+create materialized view if not exists sistema_informacion_gerencial.vm_search_clasificador_area as
+SELECT de.anio,
+       hic.fuente_siaf,
+       hic.area_siaf,
+       da.cod_area,
+       da.desc_area,
+       dcl.generica           AS generica_siaf,
+       dcl.clasificador,
+       dcl.descripcion        AS desc_clasificador,
+       sum(de.monto_nacional) AS monto_devengado
+FROM sistema_informacion_gerencial.vm_dm_expediente de
+         JOIN sistema_informacion_gerencial.vm_hechos_institucional_consolidados hic
+              ON de.id_hecho_institucional = hic.id_hecho_institucional
+         JOIN sistema_informacion_gerencial.dm_clasificador dcl
+              ON de.idclasificador_siaf::text = dcl.idclasificador_siaf::text
+         JOIN sistema_informacion_gerencial.dm_area da ON hic.area_siaf::text = da.area_siaf::text
+WHERE da.id_superior = 10468
+GROUP BY de.idclasificador_siaf, de.anio, dcl.descripcion, hic.fuente_siaf, dcl.clasificador, dcl.generica,
+         da.id_superior, da.desc_area, da.cod_area, hic.area_siaf
+UNION ALL
+SELECT de.anio,
+       hic.fuente_siaf,
+       '0001'::character varying                   AS area_siaf,
+       'D65'::bpchar                               AS cod_area,
+       'ADMINISTRACION CENTRAL'::character varying AS desc_area,
+       dcl.generica                                AS generica_siaf,
+       dcl.clasificador,
+       dcl.descripcion                             AS desc_clasificador,
+       sum(de.monto_nacional)                      AS monto_devengado
+FROM sistema_informacion_gerencial.vm_dm_expediente de
+         JOIN sistema_informacion_gerencial.vm_hechos_institucional_consolidados hic
+              ON de.id_hecho_institucional = hic.id_hecho_institucional
+         JOIN sistema_informacion_gerencial.dm_clasificador dcl
+              ON de.idclasificador_siaf::text = dcl.idclasificador_siaf::text
+         JOIN sistema_informacion_gerencial.dm_area da ON hic.area_siaf::text = da.area_siaf::text
+WHERE da.id_superior <> 10468
+   OR da.id_superior IS NULL
+GROUP BY de.idclasificador_siaf, de.anio, dcl.descripcion, hic.fuente_siaf, dcl.clasificador, dcl.generica;
+
+alter materialized view sistema_informacion_gerencial.vm_search_clasificador_area owner to postgres;
+
+
 
 
