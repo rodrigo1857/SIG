@@ -290,6 +290,7 @@ FROM pim_x_clasificador pxc
 WHERE pxc.monto_pim > 0::numeric;
 
 alter materialized view sistema_informacion_gerencial.vm_pim_clasificador owner to postgres;
+CREATE UNIQUE INDEX idx_vm_pim_clasificador ON sistema_informacion_gerencial.vm_pim_clasificador(anio,fuente_siaf,idclasificador_siaf);
 
 --------------------------------------------------------
 
@@ -333,6 +334,7 @@ WHERE da.id_superior <> 10468
 GROUP BY de.idclasificador_siaf, de.anio, dcl.descripcion, hic.fuente_siaf, dcl.clasificador, dcl.generica;
 
 alter materialized view sistema_informacion_gerencial.vm_search_clasificador_area owner to postgres;
+CREATE UNIQUE INDEX idx_vm_search_clasificador_area ON sistema_informacion_gerencial.vm_search_clasificador_area(anio,fuente_siaf,clasificador,area_siaf);
 
 
 
