@@ -185,22 +185,33 @@ create table if not exists sistema_informacion_gerencial.vw_obras_materializada
 alter table sistema_informacion_gerencial.vw_obras_materializada
     owner to postgres;
 -------10
-create table if not exists sistema_informacion_gerencial.hechos_rrhh_consolidados
+create table sistema_informacion_gerencial.hechos_rrhh_consolidados
 (
-    tipo            varchar        not null,
-    trabajador      varchar        not null,
-    cantidad        integer        not null,
-    monto           numeric(19, 2) not null,
-    fecha           date           not null,
-    mes             varchar        not null,
-    trimestre       varchar        not null,
-    generica        varchar        not null,
-    clasificador    varchar        not null,
-    tipo_subvencion varchar        not null
-);
+    anio                   integer not null,
+    certificado            varchar not null,
+    id_planilla            integer not null,
+    num_planilla           varchar not null,
+    area_siaf              varchar not null,
+    cod_tipo_pla           varchar,
+    nomb_tipo_pla          varchar,
+    cod_tipo_trabajador    integer,
+    desc_tipo_trabajador   varchar,
+    cod_estado_trabajador  integer,
+    desc_estado_trabajador varchar,
+    fuente_siaf            varchar not null,
+    generica_siaf          varchar not null,
+    idclasificador_siaf    varchar not null,
+    cantidad_trabajadores  integer,
+    monto_certificado      numeric(19, 2),
+    monto_expediente       numeric(19, 2),
+    constraint hechos_rrhh_consolidados_pk
+        primary key (anio, certificado, fuente_siaf, idclasificador_siaf, area_siaf, id_planilla)
+)
+    partition by LIST (anio);
 
 alter table sistema_informacion_gerencial.hechos_rrhh_consolidados
     owner to postgres;
+
 create table if not exists sistema_informacion_gerencial.dm_clasificador
 (
     idclasificador_siaf varchar,
