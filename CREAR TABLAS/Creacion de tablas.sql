@@ -204,8 +204,11 @@ create table sistema_informacion_gerencial.hechos_rrhh_consolidados
     cantidad_trabajadores  integer,
     monto_certificado      numeric(19, 2),
     monto_expediente       numeric(19, 2),
+    id_meta                integer not null,
+    cod_meta               varchar not null,
     constraint hechos_rrhh_consolidados_pk
-        primary key (anio, certificado, fuente_siaf, idclasificador_siaf, area_siaf, id_planilla)
+        primary key (id_meta, id_planilla, area_siaf, idclasificador_siaf, fuente_siaf, generica_siaf, certificado,
+                     anio)
 )
     partition by LIST (anio);
 
