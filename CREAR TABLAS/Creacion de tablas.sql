@@ -288,20 +288,55 @@ WITH devengado_x_clasificador AS (SELECT de.anio,
                                    dpc.monto_pim
                             FROM sistema_informacion_gerencial.dm_pim_clasificador dpc
                                      JOIN sistema_informacion_gerencial.dm_clasificador dcla
-                                          ON dpc.idclasificador_siaf::text = dcla.idclasificador_siaf::text)
-SELECT pxc.anio,
-       pxc.fuente_siaf,
-       pxc.idclasificador_siaf,
-       pxc.clasificador,
-       pxc.fts_clasificador,
-       pxc.generica_siaf,
-       pxc.descripcion,
-       pxc.monto_pim,
-       dxc.monto_devengado
-FROM pim_x_clasificador pxc
-         JOIN devengado_x_clasificador dxc ON pxc.anio = dxc.anio AND pxc.fuente_siaf::text = dxc.fuente_siaf::text AND
-                                              pxc.idclasificador_siaf::text = dxc.idclasificador_siaf::text
-WHERE pxc.monto_pim > 0::numeric;
+                                          ON dpc.idclasificador_siaf::text = dcla.idclasificador_siaf::text),
+     unioned AS (SELECT pxc.anio,
+                        pxc.fuente_siaf,
+                        pxc.idclasificador_siaf,
+                        pxc.clasificador,
+                        pxc.fts_clasificador,
+                        pxc.generica_siaf,
+                        pxc.descripcion,
+                        'SIAF'::text AS origen,
+                        pxc.monto_pim,
+                        dxc.monto_devengado
+                 FROM pim_x_clasificador pxc
+                          JOIN devengado_x_clasificador dxc
+                               ON pxc.anio = dxc.anio AND pxc.fuente_siaf::text = dxc.fuente_siaf::text AND
+                                  pxc.idclasificador_siaf::text = dxc.idclasificador_siaf::text
+                 WHERE pxc.monto_pim > 0::numeric
+                 UNION ALL
+                 SELECT hrc.anio,
+                        hrc.fuente_siaf,
+                        dc.idclasificador_siaf,
+                        dc.clasificador,
+                        dc.fts_clasificador,
+                        dc.generica               AS generica_siaf,
+                        dc.descripcion,
+                        'Q20'::text               AS origen,
+                        dpc.monto_pim,
+                        sum(hrc.monto_expediente) AS monto_devengado
+                 FROM sistema_informacion_gerencial.hechos_rrhh_consolidados hrc
+                          JOIN sistema_informacion_gerencial.dm_clasificador dc
+                               ON hrc.idclasificador_siaf::text = dc.idclasificador_siaf::text
+                          JOIN sistema_informacion_gerencial.dm_pim_clasificador dpc
+                               ON hrc.anio = dpc.anio AND hrc.fuente_siaf::text = dpc.fuente_siaf::text AND
+                                  hrc.idclasificador_siaf::text = dpc.idclasificador_siaf::text
+                 GROUP BY hrc.anio, dc.idclasificador_siaf, hrc.fuente_siaf, dc.clasificador, dc.fts_clasificador,
+                          dc.generica, dpc.monto_pim, dc.descripcion)
+SELECT unioned.anio,
+       unioned.fuente_siaf,
+       unioned.idclasificador_siaf,
+       unioned.clasificador,
+       unioned.fts_clasificador,
+       unioned.generica_siaf,
+       unioned.descripcion,
+       'SIAF'::text                                              AS origen,
+       unioned.monto_pim,
+       jsonb_object_agg(unioned.origen, unioned.monto_devengado) AS devengados_por_origen
+FROM unioned
+GROUP BY unioned.anio, unioned.fuente_siaf, unioned.idclasificador_siaf, unioned.clasificador, unioned.fts_clasificador,
+         unioned.generica_siaf, unioned.descripcion, unioned.monto_pim
+ORDER BY unioned.anio, unioned.idclasificador_siaf;
 
 alter materialized view sistema_informacion_gerencial.vm_pim_clasificador owner to postgres;
 CREATE UNIQUE INDEX idx_vm_pim_clasificador ON sistema_informacion_gerencial.vm_pim_clasificador(anio,fuente_siaf,idclasificador_siaf);
