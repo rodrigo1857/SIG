@@ -349,10 +349,11 @@ SELECT de.anio,
        hic.area_siaf,
        da.cod_area,
        da.desc_area,
-       dcl.generica           AS generica_siaf,
+       dcl.generica              AS generica_siaf,
        dcl.clasificador,
-       dcl.descripcion        AS desc_clasificador,
-       sum(de.monto_nacional) AS monto_devengado
+       dcl.descripcion           AS desc_clasificador,
+       'SIAF'::character varying AS origen,
+       sum(de.monto_nacional)    AS monto_devengado
 FROM sistema_informacion_gerencial.vm_dm_expediente de
          JOIN sistema_informacion_gerencial.vm_hechos_institucional_consolidados hic
               ON de.id_hecho_institucional = hic.id_hecho_institucional
@@ -371,6 +372,7 @@ SELECT de.anio,
        dcl.generica                                AS generica_siaf,
        dcl.clasificador,
        dcl.descripcion                             AS desc_clasificador,
+       'SIAF'::character varying                   AS origen,
        sum(de.monto_nacional)                      AS monto_devengado
 FROM sistema_informacion_gerencial.vm_dm_expediente de
          JOIN sistema_informacion_gerencial.vm_hechos_institucional_consolidados hic
@@ -380,8 +382,41 @@ FROM sistema_informacion_gerencial.vm_dm_expediente de
          JOIN sistema_informacion_gerencial.dm_area da ON hic.area_siaf::text = da.area_siaf::text
 WHERE da.id_superior <> 10468
    OR da.id_superior IS NULL
-GROUP BY de.idclasificador_siaf, de.anio, dcl.descripcion, hic.fuente_siaf, dcl.clasificador, dcl.generica;
-
+GROUP BY de.idclasificador_siaf, de.anio, dcl.descripcion, hic.fuente_siaf, dcl.clasificador, dcl.generica
+UNION ALL
+SELECT hrc.anio,
+       hrc.fuente_siaf,
+       hrc.area_siaf,
+       da.cod_area,
+       da.desc_area,
+       hrc.generica_siaf,
+       dc.clasificador,
+       dc.descripcion            AS desc_clasificador,
+       'Q20'::character varying  AS origen,
+       sum(hrc.monto_expediente) AS monto_devengado
+FROM sistema_informacion_gerencial.hechos_rrhh_consolidados hrc
+         JOIN sistema_informacion_gerencial.dm_clasificador dc ON hrc.idclasificador_siaf::text = dc.idclasificador_siaf::text
+         JOIN sistema_informacion_gerencial.dm_area da ON hrc.area_siaf::text = da.area_siaf::text
+WHERE da.id_superior = 10468
+GROUP BY dc.clasificador, hrc.area_siaf, da.desc_area, da.cod_area, hrc.anio, hrc.fuente_siaf, hrc.generica_siaf,
+         dc.descripcion
+UNION ALL
+SELECT DISTINCT hrc.anio,
+                hrc.fuente_siaf,
+                '0001'::text                   AS area_siaf,
+                'D65'::text                    AS cod_area,
+                'ADMINISTRACION CENTRAL'::text AS desc_area,
+                hrc.generica_siaf,
+                dc.clasificador,
+                dc.descripcion                 AS desc_clasificador,
+                'Q20'::text                    AS origen,
+                sum(hrc.monto_expediente)      AS monto_devengado
+FROM sistema_informacion_gerencial.hechos_rrhh_consolidados hrc
+         JOIN sistema_informacion_gerencial.dm_clasificador dc ON hrc.idclasificador_siaf::text = dc.idclasificador_siaf::text
+         JOIN sistema_informacion_gerencial.dm_area da ON hrc.area_siaf::text = da.area_siaf::text
+WHERE da.id_superior <> 10468
+   OR da.id_superior IS NULL
+GROUP BY dc.clasificador, hrc.anio, hrc.fuente_siaf, hrc.generica_siaf, dc.descripcion;
 alter materialized view sistema_informacion_gerencial.vm_search_clasificador_area owner to postgres;
 CREATE UNIQUE INDEX idx_vm_search_clasificador_area ON sistema_informacion_gerencial.vm_search_clasificador_area(anio,fuente_siaf,clasificador,area_siaf);
 
