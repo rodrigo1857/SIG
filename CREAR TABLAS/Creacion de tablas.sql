@@ -339,7 +339,7 @@ GROUP BY unioned.anio, unioned.fuente_siaf, unioned.idclasificador_siaf, unioned
 ORDER BY unioned.anio, unioned.idclasificador_siaf;
 
 alter materialized view sistema_informacion_gerencial.vm_pim_clasificador owner to postgres;
-CREATE UNIQUE INDEX idx_vm_pim_clasificador ON sistema_informacion_gerencial.vm_pim_clasificador(anio,fuente_siaf,idclasificador_siaf);
+CREATE UNIQUE INDEX idx_vm_pim_clasificador ON sistema_informacion_gerencial.vm_pim_clasificador(anio,fuente_siaf,idclasificador_siaf,origen);
 
 --------------------------------------------------------
 
