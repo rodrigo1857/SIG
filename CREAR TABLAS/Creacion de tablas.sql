@@ -418,7 +418,7 @@ WHERE da.id_superior <> 10468
    OR da.id_superior IS NULL
 GROUP BY dc.clasificador, hrc.anio, hrc.fuente_siaf, hrc.generica_siaf, dc.descripcion;
 alter materialized view sistema_informacion_gerencial.vm_search_clasificador_area owner to postgres;
-CREATE UNIQUE INDEX idx_vm_search_clasificador_area ON sistema_informacion_gerencial.vm_search_clasificador_area(anio,fuente_siaf,clasificador,area_siaf);
+CREATE UNIQUE INDEX idx_vm_search_clasificador_area ON sistema_informacion_gerencial.vm_search_clasificador_area(anio,fuente_siaf,clasificador,area_siaf,origen);
 
 
 
