@@ -38,6 +38,19 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_generica
     desc_generica VARCHAR
 );
 
+
+-------3
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_clasificador
+(
+    idclasificador_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    generica character varying COLLATE pg_catalog."default",
+    clasificador character varying COLLATE pg_catalog."default",
+    descripcion character varying COLLATE pg_catalog."default",
+    fts_clasificador tsvector GENERATED ALWAYS AS (to_tsvector('spanish'::regconfig, (((COALESCE(descripcion, ''::character varying))::text || ' '::text) || (COALESCE(clasificador, ''::character varying))::text))) STORED,
+    anio integer NOT NULL,
+    CONSTRAINT dm_clasificador_pk PRIMARY KEY (anio, idclasificador_siaf)
+) PARTITION BY LIST (anio);
+
 -------4
 CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_institucional_consolidados
 (
@@ -383,7 +396,7 @@ FROM sistema_informacion_gerencial.vm_dm_expediente de
               ON de.idclasificador_siaf::text = dcl.idclasificador_siaf::text
          JOIN sistema_informacion_gerencial.dm_area da ON hic.area_siaf::text = da.area_siaf::text
 WHERE (da.id_superior <> 10468
-   OR da.id_superior IS NULL) AND de.ciclo = 'G' AND de.fase = 'D'
+    OR da.id_superior IS NULL) AND de.ciclo = 'G' AND de.fase = 'D'
 GROUP BY de.idclasificador_siaf, de.anio, dcl.descripcion, hic.fuente_siaf, dcl.clasificador, dcl.generica
 UNION ALL
 SELECT hrc.anio,
@@ -421,6 +434,5 @@ WHERE da.id_superior <> 10468
 GROUP BY dc.clasificador, hrc.anio, hrc.fuente_siaf, hrc.generica_siaf, dc.descripcion;
 alter materialized view sistema_informacion_gerencial.vm_search_clasificador_area owner to postgres;
 CREATE UNIQUE INDEX idx_vm_search_clasificador_area ON sistema_informacion_gerencial.vm_search_clasificador_area(anio,fuente_siaf,clasificador,area_siaf,origen);
-
 
 
