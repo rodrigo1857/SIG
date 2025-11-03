@@ -277,6 +277,7 @@ WITH devengado_x_clasificador AS (SELECT de.anio,
                                   FROM sistema_informacion_gerencial.dm_expediente de
                                            JOIN sistema_informacion_gerencial.hechos_institucional_consolidados hic
                                                 ON de.id_hecho_institucional = hic.id_hecho_institucional
+                                  WHERE de.ciclo = 'G' AND de.fase = 'D'
                                   GROUP BY de.anio, de.idclasificador_siaf, hic.fuente_siaf),
      pim_x_clasificador AS (SELECT dpc.anio,
                                    dpc.fuente_siaf,
@@ -341,6 +342,7 @@ ORDER BY unioned.anio, unioned.idclasificador_siaf;
 alter materialized view sistema_informacion_gerencial.vm_pim_clasificador owner to postgres;
 CREATE UNIQUE INDEX idx_vm_pim_clasificador ON sistema_informacion_gerencial.vm_pim_clasificador(anio,fuente_siaf,idclasificador_siaf,origen);
 
+
 --------------------------------------------------------
 
 create materialized view if not exists sistema_informacion_gerencial.vm_search_clasificador_area as
@@ -360,7 +362,7 @@ FROM sistema_informacion_gerencial.vm_dm_expediente de
          JOIN sistema_informacion_gerencial.dm_clasificador dcl
               ON de.idclasificador_siaf::text = dcl.idclasificador_siaf::text
          JOIN sistema_informacion_gerencial.dm_area da ON hic.area_siaf::text = da.area_siaf::text
-WHERE da.id_superior = 10468
+WHERE da.id_superior = 10468 AND de.ciclo = 'G' AND de.fase = 'D'
 GROUP BY de.idclasificador_siaf, de.anio, dcl.descripcion, hic.fuente_siaf, dcl.clasificador, dcl.generica,
          da.id_superior, da.desc_area, da.cod_area, hic.area_siaf
 UNION ALL
@@ -380,8 +382,8 @@ FROM sistema_informacion_gerencial.vm_dm_expediente de
          JOIN sistema_informacion_gerencial.dm_clasificador dcl
               ON de.idclasificador_siaf::text = dcl.idclasificador_siaf::text
          JOIN sistema_informacion_gerencial.dm_area da ON hic.area_siaf::text = da.area_siaf::text
-WHERE da.id_superior <> 10468
-   OR da.id_superior IS NULL
+WHERE (da.id_superior <> 10468
+   OR da.id_superior IS NULL) AND de.ciclo = 'G' AND de.fase = 'D'
 GROUP BY de.idclasificador_siaf, de.anio, dcl.descripcion, hic.fuente_siaf, dcl.clasificador, dcl.generica
 UNION ALL
 SELECT hrc.anio,
@@ -419,7 +421,6 @@ WHERE da.id_superior <> 10468
 GROUP BY dc.clasificador, hrc.anio, hrc.fuente_siaf, hrc.generica_siaf, dc.descripcion;
 alter materialized view sistema_informacion_gerencial.vm_search_clasificador_area owner to postgres;
 CREATE UNIQUE INDEX idx_vm_search_clasificador_area ON sistema_informacion_gerencial.vm_search_clasificador_area(anio,fuente_siaf,clasificador,area_siaf,origen);
-
 
 
 
