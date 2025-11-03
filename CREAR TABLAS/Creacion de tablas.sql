@@ -302,7 +302,9 @@ WITH devengado_x_clasificador AS (SELECT de.anio,
                                    dpc.monto_pim
                             FROM sistema_informacion_gerencial.dm_pim_clasificador dpc
                                      JOIN sistema_informacion_gerencial.dm_clasificador dcla
-                                          ON dpc.idclasificador_siaf::text = dcla.idclasificador_siaf::text),
+                                          ON dpc.idclasificador_siaf::text = dcla.idclasificador_siaf::text
+                                          AND dpc.anio = dcla.anio
+                            ),
      unioned AS (SELECT pxc.anio,
                         pxc.fuente_siaf,
                         pxc.idclasificador_siaf,
