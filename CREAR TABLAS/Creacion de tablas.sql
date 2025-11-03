@@ -1,240 +1,250 @@
------ creacion del nuevo esquema
-create schema if not exists sistema_informacion_gerencial;
+--- creacion del nuevo esquema
+CREATE SCHEMA IF NOT EXISTS sistema_informacion_gerencial;
 
 --- ubicacion del esquema
 SET search_path TO sistema_informacion_gerencial;
 
 ---- creacion de las tablas
 -------1
-create table if not exists sistema_informacion_gerencial.dm_area
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_area
 (
-    area_siaf   varchar not null
-        constraint dm_area_pk
-            primary key,
-    cod_area    char(6) not null,
-    desc_area   varchar not null,
-    nivel       integer,
-    id_area     integer,
-    id_superior integer
+    area_siaf VARCHAR NOT NULL
+        CONSTRAINT dm_area_pk
+            PRIMARY KEY,
+    cod_area  CHAR(6) NOT NULL,
+    desc_area VARCHAR NOT NULL,
+    nivel     INTEGER,
+    id_area   INTEGER,
+    id_superior INTEGER
 );
 
 
 -------2
-create table if not exists sistema_informacion_gerencial.dm_fuente
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_fuente
 (
-    fuente_siaf varchar not null
-        constraint dm_fuente_pk
-            primary key,
-    desc_fuente varchar not null
+    fuente_siaf VARCHAR NOT NULL
+        CONSTRAINT dm_fuente_pk
+            PRIMARY KEY,
+    desc_fuente VARCHAR NOT NULL
 );
 
 -------3
-create table if not exists sistema_informacion_gerencial.dm_generica
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_generica
 (
-    id_generica   integer not null,
-    generica_siaf varchar not null
-        constraint dm_generica_pk
-            primary key,
-    desc_generica varchar
+    id_generica   INTEGER NOT NULL,
+    generica_siaf VARCHAR NOT NULL
+        CONSTRAINT dm_generica_pk
+            PRIMARY KEY,
+    desc_generica VARCHAR
 );
 
 -------4
-create table sistema_informacion_gerencial.hechos_institucional_consolidados
+CREATE TABLE sistema_informacion_gerencial.hechos_institucional_consolidados
 (
-    area_siaf                varchar        not null
-        constraint hechos_institucional_consolidados_dm_area_area_siaf_fk
-            references sistema_informacion_gerencial.dm_area,
-    num_certificado          varchar        not null,
-    anio                     integer        not null,
-    monto_certificado        numeric(19, 2) not null,
-    id_hecho_institucional   bigint         not null,
-    monto_devengado          numeric(19, 2),
-    fuente_siaf              varchar        not null
-        constraint hechos_institucional_consolidados_dm_fuente_fuente_siaf_fk
-            references sistema_informacion_gerencial.dm_fuente,
-    generica_siaf            varchar        not null
-        constraint hechos_institucional_consolidados_dm_generica_generica_siaf_fk
-            references sistema_informacion_gerencial.dm_generica,
-    idclasificador_siaf      varchar,
-    clasificador_siaf        varchar,
-    monto_compromiso_anual   numeric(19, 2),
-    monto_compromiso_mensual numeric(19, 2),
-    monto_girado             numeric(19, 2),
-    constraint hechos_institucional_consolidados_pk
-        primary key (id_hecho_institucional, anio)
+    area_siaf             VARCHAR        NOT NULL
+        CONSTRAINT hechos_institucional_consolidados_dm_area_area_siaf_fk
+            REFERENCES sistema_informacion_gerencial.dm_area,
+    num_certificado       VARCHAR        NOT NULL,
+    anio                  INTEGER        NOT NULL,
+    monto_certificado     NUMERIC(19, 2) NOT NULL,
+    id_hecho_institucional BIGINT         NOT NULL,
+    monto_devengado       NUMERIC(19, 2),
+    fuente_siaf           VARCHAR        NOT NULL
+        CONSTRAINT hechos_institucional_consolidados_dm_fuente_fuente_siaf_fk
+            REFERENCES sistema_informacion_gerencial.dm_fuente,
+    generica_siaf         VARCHAR        NOT NULL
+        CONSTRAINT hechos_institucional_consolidados_dm_generica_generica_siaf_fk
+            REFERENCES sistema_informacion_gerencial.dm_generica,
+    idclasificador_siaf   VARCHAR,
+    clasificador_siaf     VARCHAR,
+    monto_compromiso_anual  NUMERIC(19, 2),
+    monto_compromiso_mensual NUMERIC(19, 2),
+    monto_girado          NUMERIC(19, 2),
+    CONSTRAINT hechos_institucional_consolidados_pk
+        -- (CORREGIDO) La PK ya estaba correcta, solo la verificamos.
+        PRIMARY KEY (id_hecho_institucional, idclasificador_siaf, anio)
 )
-partition by LIST (anio);
+    PARTITION BY LIST (anio);
 
 
 -------5
-create table if not exists sistema_informacion_gerencial.dm_pim
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim
 (
-    anio          integer        not null,
-    fuente_siaf   varchar        not null,
-    id_area       integer,
-    area_siaf     varchar,
-    id_generica   integer,
-    monto_pia     numeric(19, 2) not null,
-    monto_pim     numeric(19, 2) not null,
-    generica_siaf varchar
+    anio          INTEGER        NOT NULL,
+    fuente_siaf   VARCHAR        NOT NULL,
+    id_area       INTEGER,
+    area_siaf     VARCHAR,
+    id_generica   INTEGER,
+    monto_pia     NUMERIC(19, 2) NOT NULL,
+    monto_pim     NUMERIC(19, 2) NOT NULL,
+    generica_siaf VARCHAR,
+    -- (CORREGIDO) Añadida PK para que el índice de la MV sea válido.
+    CONSTRAINT dm_pim_pk
+        PRIMARY KEY (anio, id_area, fuente_siaf, generica_siaf)
 );
 
 
 -------6
-create table if not exists sistema_informacion_gerencial.hechos_pim
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_pim
 (
-    anio          integer not null,
-    ejecutora     varchar not null,
-    fuente_siaf   varchar not null,
-    generica_siaf varchar not null,
-    monto_pia     numeric(19, 2),
-    monto_pim     numeric(19, 2)
+    anio          INTEGER NOT NULL,
+    ejecutora     VARCHAR NOT NULL,
+    fuente_siaf   VARCHAR NOT NULL,
+    generica_siaf VARCHAR NOT NULL,
+    monto_pia     NUMERIC(19, 2),
+    monto_pim     NUMERIC(19, 2),
+    -- (CORREGIDO) Añadida PK. Incluye 'anio' (clave de partición)
+    CONSTRAINT hechos_pim_pk
+        PRIMARY KEY (anio, ejecutora, fuente_siaf, generica_siaf)
 )
-    partition by LIST (anio);
+    PARTITION BY LIST (anio);
 
 
 
 -------7
-create table if not exists sistema_informacion_gerencial.dm_certificado
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_certificado
 (
-    id_hecho_institucional bigint,
-    anio                   integer not null,
-    num_certificado        varchar not null,
-    area_siaf              varchar,
-    secuencia              varchar not null,
-    ejecutora              varchar,
-    monto_clasificador     numeric(19, 2),
-    fuente_siaf            varchar,
-    glosa                  varchar,
-    correlativo            varchar not null,
-    idclasificador_siaf    varchar not null,
-    clasificador           varchar,
-    generica_siaf          varchar,
-    cod_doc                varchar,
-    num_doc                varchar,
-    estado_envio           varchar,
-    estado_registro        varchar,
-    fecha_creacion_clt     date,
-    idmeta                 varchar not null,
-    codmeta                varchar,
-    nomb_met_ins           varchar,
-    constraint dm_certificado_hechos_institucional_consolidados_anio_id_hechos
-        foreign key (anio, id_hecho_institucional) references sistema_informacion_gerencial.hechos_institucional_consolidados (anio,id_hecho_institucional)
+    id_hecho_institucional BIGINT,
+    anio                   INTEGER        NOT NULL,
+    num_certificado        VARCHAR        NOT NULL,
+    area_siaf              VARCHAR,
+    secuencia              VARCHAR        NOT NULL,
+    ejecutora              VARCHAR,
+    monto_clasificador     NUMERIC(19, 2),
+    fuente_siaf            VARCHAR,
+    glosa                  VARCHAR,
+    correlativo            VARCHAR        NOT NULL,
+    idclasificador_siaf    VARCHAR        NOT NULL,
+    clasificador           VARCHAR,
+    generica_siaf          VARCHAR,
+    cod_doc                VARCHAR,
+    num_doc                VARCHAR,
+    estado_envio           VARCHAR,
+    estado_registro        VARCHAR,
+    fecha_creacion_clt     DATE,
+    idmeta                 VARCHAR        NOT NULL,
+    codmeta                VARCHAR,
+    nomb_met_ins           VARCHAR,
+    CONSTRAINT dm_certificado_hechos_institucional_consolidados_anio_id_hechos
+        FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf) REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
+    -- (CORREGIDO) Añadida PK. Debe incluir 'anio' (clave de partición).
+    CONSTRAINT dm_certificado_pk
+        PRIMARY KEY (anio, id_hecho_institucional, secuencia, correlativo, idclasificador_siaf, idmeta)
 )
-    partition by LIST (anio);
+    PARTITION BY LIST (anio);
 
 
 -------8
-create table if not exists sistema_informacion_gerencial.dm_expediente
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_expediente
 (
-    anio                   integer not null,
-    ejecutora              char(6),
-    expediente             varchar not null,
-    fase                   varchar,
-    secuencia              varchar not null,
-    correlativo            varchar not null,
-    ciclo                  varchar,
-    fecha_autorizacion     date,
-    clasificador           varchar,
-    monto_nacional         numeric(19, 2),
-    cod_doc                varchar not null,
-    num_doc                varchar,
-    estado_envio           varchar,
-    idclasificador_siaf    varchar not null,
-    trimestre              integer,
-    id_hecho_institucional bigint  not null,
-    certificado            varchar,
-    certificado_secuencia  varchar,
-    constraint dm_expediente_hechos_institucional_consolidados_id_hechos_insti
-        foreign key (anio, id_hecho_institucional) references sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional)
-
+    anio                   INTEGER NOT NULL,
+    ejecutora              CHAR(6),
+    expediente             VARCHAR NOT NULL,
+    fase                   VARCHAR,
+    secuencia              VARCHAR NOT NULL,
+    correlativo            VARCHAR NOT NULL,
+    ciclo                  VARCHAR,
+    fecha_autorizacion     DATE,
+    clasificador           VARCHAR,
+    monto_nacional         NUMERIC(19, 2),
+    cod_doc                VARCHAR NOT NULL,
+    num_doc                VARCHAR,
+    estado_envio           VARCHAR,
+    idclasificador_siaf    VARCHAR NOT NULL,
+    trimestre              INTEGER,
+    id_hecho_institucional BIGINT  NOT NULL,
+    certificado            VARCHAR,
+    certificado_secuencia  VARCHAR,
+    CONSTRAINT dm_expediente_hechos_institucional_consolidados_id_hechos_insti
+        FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf) REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
+    -- (CORREGIDO) Añadida PK. Debe incluir 'anio' (clave de partición).
+    CONSTRAINT dm_expediente_pk
+        PRIMARY KEY (anio, id_hecho_institucional, expediente, secuencia, correlativo, idclasificador_siaf,ciclo,fase)
 )
-    partition by LIST (anio);
+    PARTITION BY LIST (anio);
 
 
 
 -------9
-create table if not exists sistema_informacion_gerencial.vw_obras_materializada
+-- (NOTA) Esta tabla tiene prefijo 'vw_' (vista) pero está creada como TABLA.
+-- La dejo como tabla, ya que así estaba en tu script original.
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.vw_obras_materializada
 (
-    id_area_usuaria   integer,
-    area_description  varchar,
-    id_item           integer,
-    desc_item         varchar,
-    id_fecha          integer,
-    id_obra           integer,
-    nomb_obra         varchar,
-    cui               varchar,
-    cantidad          varchar,
-    meta              varchar,
-    monto             numeric(19, 2),
-    num_requerimiento varchar,
-    num_hoja_ruta     varchar,
-    num_oc            varchar,
-    num_siaf          varchar,
-    num_certificado   varchar,
-    monto_certificado numeric(19, 2),
-    estado            varchar,
-    oficina           varchar
+    id_area_usuaria   INTEGER,
+    area_description  VARCHAR,
+    id_item           INTEGER,
+    desc_item         VARCHAR,
+    id_fecha          INTEGER,
+    id_obra           INTEGER,
+    nomb_obra         VARCHAR,
+    cui               VARCHAR,
+    cantidad          VARCHAR,
+    meta              VARCHAR,
+    monto             NUMERIC(19, 2),
+    num_requerimiento VARCHAR,
+    num_hoja_ruta     VARCHAR,
+    num_oc            VARCHAR,
+    num_siaf          VARCHAR,
+    num_certificado   VARCHAR,
+    monto_certificado NUMERIC(19, 2),
+    estado            VARCHAR,
+    oficina           VARCHAR
 );
 
 
 -------10
-create table sistema_informacion_gerencial.hechos_rrhh_consolidados
+CREATE TABLE sistema_informacion_gerencial.hechos_rrhh_consolidados
 (
-    anio                   integer not null,
-    certificado            varchar not null,
-    id_planilla            integer not null,
-    num_planilla           varchar not null,
-    area_siaf              varchar not null,
-    cod_tipo_pla           varchar,
-    nomb_tipo_pla          varchar,
-    cod_tipo_trabajador    integer,
-    desc_tipo_trabajador   varchar,
-    cod_estado_trabajador  integer,
-    desc_estado_trabajador varchar,
-    fuente_siaf            varchar not null,
-    generica_siaf          varchar not null,
-    idclasificador_siaf    varchar not null,
-    cantidad_trabajadores  integer,
-    monto_certificado      numeric(19, 2),
-    monto_expediente       numeric(19, 2),
-    id_meta                integer not null,
-    cod_meta               varchar not null,
-    constraint hechos_rrhh_consolidados_pk
-        primary key (id_meta, id_planilla, area_siaf, idclasificador_siaf, fuente_siaf, generica_siaf, certificado,
+    anio                   INTEGER        NOT NULL,
+    certificado            VARCHAR        NOT NULL,
+    id_planilla            INTEGER        NOT NULL,
+    num_planilla           VARCHAR        NOT NULL,
+    area_siaf              VARCHAR        NOT NULL,
+    cod_tipo_pla           VARCHAR,
+    nomb_tipo_pla          VARCHAR,
+    cod_tipo_trabajador    INTEGER,
+    desc_tipo_trabajador   VARCHAR,
+    cod_estado_trabajador  INTEGER,
+    desc_estado_trabajador VARCHAR,
+    fuente_siaf            VARCHAR        NOT NULL,
+    generica_siaf          VARCHAR        NOT NULL,
+    idclasificador_siaf    VARCHAR        NOT NULL,
+    cantidad_trabajadores  INTEGER,
+    monto_certificado      NUMERIC(19, 2),
+    monto_expediente       NUMERIC(19, 2),
+    id_meta                INTEGER        NOT NULL,
+    cod_meta               VARCHAR        NOT NULL,
+    CONSTRAINT hechos_rrhh_consolidados_pk
+        PRIMARY KEY (id_meta, id_planilla, area_siaf, idclasificador_siaf, fuente_siaf, generica_siaf, certificado,
                      anio)
 )
-    partition by LIST (anio);
+    PARTITION BY LIST (anio);
 
 
 
-create table if not exists sistema_informacion_gerencial.dm_clasificador
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_clasificador
 (
-    idclasificador_siaf varchar,
-    generica            varchar,
-    clasificador        varchar,
-    descripcion         varchar,
-    fts_clasificador    tsvector generated always as (to_tsvector('spanish'::regconfig,
-                                                                  (((COALESCE(descripcion, ''::character varying))::text || ' '::text) ||
-                                                                   (COALESCE(clasificador, ''::character varying))::text))) stored
+    idclasificador_siaf VARCHAR,
+    generica            VARCHAR,
+    clasificador        VARCHAR,
+    descripcion         VARCHAR,
+    fts_clasificador    TSVECTOR GENERATED ALWAYS AS (to_tsvector('spanish'::REGCONFIG,
+                                                                  ((((COALESCE(descripcion, ''::CHARACTER VARYING))::TEXT || ' '::TEXT) ||
+                                                                    (COALESCE(clasificador, ''::CHARACTER VARYING))::TEXT)))) STORED
 );
 
 
-
-
-
-create table if not exists sistema_informacion_gerencial.dm_pim_clasificador
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_clasificador
 (
-    anio                integer,
-    fuente_siaf         varchar,
-    idclasificador_siaf varchar,
-    generica_siaf       varchar,
-    monto_pim           numeric(19, 2)
+    anio                INTEGER,
+    fuente_siaf         VARCHAR,
+    idclasificador_siaf VARCHAR,
+    generica_siaf       VARCHAR,
+    monto_pim           NUMERIC(19, 2)
 );
 
+----- VISTAS MATERIALIZADAS Y SUS INDICES (CORREGIDOS) -----
 
-
------
 CREATE MATERIALIZED VIEW vm_dm_area AS SELECT * FROM sistema_informacion_gerencial.dm_area;
 CREATE UNIQUE INDEX idx_vm_dm_area ON sistema_informacion_gerencial.vm_dm_area(area_siaf);
 
@@ -245,19 +255,24 @@ CREATE MATERIALIZED VIEW vm_dm_generica AS SELECT * FROM sistema_informacion_ger
 CREATE UNIQUE INDEX idx_vm_dm_generica ON vm_dm_generica(generica_siaf);
 
 CREATE MATERIALIZED VIEW vm_hechos_institucional_consolidados AS SELECT * FROM sistema_informacion_gerencial.hechos_institucional_consolidados;
-CREATE UNIQUE INDEX idx_vm_hechos_institucional_consolidados ON vm_hechos_institucional_consolidados(id_hecho_institucional);
+-- (CORREGIDO) El índice debe coincidir con la PK de la tabla base.
+CREATE UNIQUE INDEX idx_vm_hechos_institucional_consolidados ON vm_hechos_institucional_consolidados(id_hecho_institucional, idclasificador_siaf, anio);
 
 CREATE MATERIALIZED VIEW vm_dm_certificado AS SELECT * FROM sistema_informacion_gerencial.dm_certificado;
-CREATE UNIQUE INDEX idx_vm_dm_certificado ON vm_dm_certificado(id_hecho_institucional,secuencia,correlativo,idclasificador_siaf,idmeta);
+-- (CORREGIDO) El índice debe coincidir con la nueva PK de la tabla base (e incluir 'anio')
+CREATE UNIQUE INDEX idx_vm_dm_certificado ON vm_dm_certificado(anio, id_hecho_institucional, secuencia, correlativo, idclasificador_siaf, idmeta);
 
 CREATE MATERIALIZED VIEW vm_dm_expediente AS SELECT * FROM sistema_informacion_gerencial.dm_expediente;
-CREATE UNIQUE INDEX idx_vm_dm_expediente ON vm_dm_expediente(id_hecho_institucional,expediente,secuencia,correlativo,idclasificador_siaf);
+-- (CORREGIDO) El índice debe coincidir con la nueva PK de la tabla base (e incluir 'anio')
+CREATE UNIQUE INDEX idx_vm_dm_expediente ON vm_dm_expediente(anio, id_hecho_institucional, expediente, secuencia, correlativo, idclasificador_siaf,ciclo,fase);
 
 CREATE MATERIALIZED VIEW vm_hechos_pim AS SELECT * FROM sistema_informacion_gerencial.hechos_pim;
-CREATE UNIQUE INDEX idx_vm_hechos_pim ON vm_hechos_pim(anio,fuente_siaf,generica_siaf);
+-- (CORREGIDO) El índice debe coincidir con la nueva PK de la tabla base.
+CREATE UNIQUE INDEX idx_vm_hechos_pim ON vm_hechos_pim(anio, ejecutora, fuente_siaf, generica_siaf);
 
 CREATE MATERIALIZED VIEW vm_dm_pim AS SELECT * FROM sistema_informacion_gerencial.dm_pim;
-CREATE UNIQUE INDEX idx_vm_dm_pim ON vm_dm_pim(anio,id_area,fuente_siaf,generica_siaf);
+-- (CORREGIDO) El índice debe coincidir con la nueva PK de la tabla base.
+CREATE UNIQUE INDEX idx_vm_dm_pim ON vm_dm_pim(anio, id_area, fuente_siaf, generica_siaf);
 
 --------------------------------------
 create materialized view if not exists sistema_informacion_gerencial.vm_pim_clasificador as
