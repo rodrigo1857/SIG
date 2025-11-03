@@ -39,32 +39,31 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_generica
 );
 
 -------4
-CREATE TABLE sistema_informacion_gerencial.hechos_institucional_consolidados
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_institucional_consolidados
 (
-    area_siaf             VARCHAR        NOT NULL
-        CONSTRAINT hechos_institucional_consolidados_dm_area_area_siaf_fk
-            REFERENCES sistema_informacion_gerencial.dm_area,
-    num_certificado       VARCHAR        NOT NULL,
-    anio                  INTEGER        NOT NULL,
-    monto_certificado     NUMERIC(19, 2) NOT NULL,
-    id_hecho_institucional BIGINT         NOT NULL,
-    monto_devengado       NUMERIC(19, 2),
-    fuente_siaf           VARCHAR        NOT NULL
-        CONSTRAINT hechos_institucional_consolidados_dm_fuente_fuente_siaf_fk
-            REFERENCES sistema_informacion_gerencial.dm_fuente,
-    generica_siaf         VARCHAR        NOT NULL
-        CONSTRAINT hechos_institucional_consolidados_dm_generica_generica_siaf_fk
-            REFERENCES sistema_informacion_gerencial.dm_generica,
-    idclasificador_siaf   VARCHAR,
-    clasificador_siaf     VARCHAR,
-    monto_compromiso_anual  NUMERIC(19, 2),
-    monto_compromiso_mensual NUMERIC(19, 2),
-    monto_girado          NUMERIC(19, 2),
-    CONSTRAINT hechos_institucional_consolidados_pk
-        -- (CORREGIDO) La PK ya estaba correcta, solo la verificamos.
-        PRIMARY KEY (id_hecho_institucional, idclasificador_siaf, anio)
-)
-    PARTITION BY LIST (anio);
+    area_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    num_certificado character varying COLLATE pg_catalog."default" NOT NULL,
+    anio integer NOT NULL,
+    monto_certificado numeric(19,2) NOT NULL,
+    id_hecho_institucional bigint NOT NULL,
+    monto_devengado numeric(19,2),
+    fuente_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    generica_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    idclasificador_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    clasificador_siaf character varying COLLATE pg_catalog."default",
+    monto_compromiso_anual numeric(19,2),
+    monto_compromiso_mensual numeric(19,2),
+    monto_girado numeric(19,2),
+    CONSTRAINT hechos_institucional_consolidados_pk PRIMARY KEY (id_hecho_institucional, idclasificador_siaf, anio),
+    CONSTRAINT hechos_institucional_consolidados_dm_area_area_siaf_fk FOREIGN KEY (area_siaf)
+        REFERENCES sistema_informacion_gerencial.dm_area (area_siaf),
+    CONSTRAINT hechos_institucional_consolidados_dm_clasificador_idclasificado FOREIGN KEY (anio, idclasificador_siaf)
+        REFERENCES sistema_informacion_gerencial.dm_clasificador (anio, idclasificador_siaf),
+    CONSTRAINT hechos_institucional_consolidados_dm_fuente_fuente_siaf_fk FOREIGN KEY (fuente_siaf)
+        REFERENCES sistema_informacion_gerencial.dm_fuente (fuente_siaf),
+    CONSTRAINT hechos_institucional_consolidados_dm_generica_generica_siaf_fk FOREIGN KEY (generica_siaf)
+        REFERENCES sistema_informacion_gerencial.dm_generica (generica_siaf)
+) PARTITION BY LIST (anio);
 
 
 -------5
@@ -127,7 +126,6 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_certificado
     nomb_met_ins           VARCHAR,
     CONSTRAINT dm_certificado_hechos_institucional_consolidados_anio_id_hechos
         FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf) REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
-    -- (CORREGIDO) Añadida PK. Debe incluir 'anio' (clave de partición).
     CONSTRAINT dm_certificado_pk
         PRIMARY KEY (anio, id_hecho_institucional, secuencia, correlativo, idclasificador_siaf, idmeta)
 )
@@ -157,7 +155,6 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_expediente
     certificado_secuencia  VARCHAR,
     CONSTRAINT dm_expediente_hechos_institucional_consolidados_id_hechos_insti
         FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf) REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
-    -- (CORREGIDO) Añadida PK. Debe incluir 'anio' (clave de partición).
     CONSTRAINT dm_expediente_pk
         PRIMARY KEY (anio, id_hecho_institucional, expediente, secuencia, correlativo, idclasificador_siaf,ciclo,fase)
 )
@@ -166,8 +163,6 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_expediente
 
 
 -------9
--- (NOTA) Esta tabla tiene prefijo 'vw_' (vista) pero está creada como TABLA.
--- La dejo como tabla, ya que así estaba en tu script original.
 CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.vw_obras_materializada
 (
     id_area_usuaria   INTEGER,
@@ -217,21 +212,20 @@ CREATE TABLE sistema_informacion_gerencial.hechos_rrhh_consolidados
     CONSTRAINT hechos_rrhh_consolidados_pk
         PRIMARY KEY (id_meta, id_planilla, area_siaf, idclasificador_siaf, fuente_siaf, generica_siaf, certificado,
                      anio)
-)
-    PARTITION BY LIST (anio);
+) PARTITION BY LIST (anio);
 
 
 
 CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_clasificador
 (
-    idclasificador_siaf VARCHAR,
-    generica            VARCHAR,
-    clasificador        VARCHAR,
-    descripcion         VARCHAR,
-    fts_clasificador    TSVECTOR GENERATED ALWAYS AS (to_tsvector('spanish'::REGCONFIG,
-                                                                  ((((COALESCE(descripcion, ''::CHARACTER VARYING))::TEXT || ' '::TEXT) ||
-                                                                    (COALESCE(clasificador, ''::CHARACTER VARYING))::TEXT)))) STORED
-);
+    idclasificador_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    generica character varying COLLATE pg_catalog."default",
+    clasificador character varying COLLATE pg_catalog."default",
+    descripcion character varying COLLATE pg_catalog."default",
+    fts_clasificador tsvector GENERATED ALWAYS AS (to_tsvector('spanish'::regconfig, (((COALESCE(descripcion, ''::character varying))::text || ' '::text) || (COALESCE(clasificador, ''::character varying))::text))) STORED,
+    anio integer NOT NULL,
+    CONSTRAINT dm_clasificador_pk PRIMARY KEY (anio, idclasificador_siaf)
+) PARTITION BY LIST (anio);
 
 
 CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_clasificador
