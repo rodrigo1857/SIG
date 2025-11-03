@@ -18,8 +18,7 @@ create table if not exists sistema_informacion_gerencial.dm_area
     id_superior integer
 );
 
-alter table sistema_informacion_gerencial.dm_area
-    owner to postgres;
+
 -------2
 create table if not exists sistema_informacion_gerencial.dm_fuente
 (
@@ -29,8 +28,6 @@ create table if not exists sistema_informacion_gerencial.dm_fuente
     desc_fuente varchar not null
 );
 
-alter table sistema_informacion_gerencial.dm_fuente
-    owner to postgres;
 -------3
 create table if not exists sistema_informacion_gerencial.dm_generica
 (
@@ -41,32 +38,34 @@ create table if not exists sistema_informacion_gerencial.dm_generica
     desc_generica varchar
 );
 
-alter table sistema_informacion_gerencial.dm_generica
-    owner to postgres;
 -------4
-create table if not exists sistema_informacion_gerencial.hechos_institucional_consolidados
+create table sistema_informacion_gerencial.hechos_institucional_consolidados
 (
-    area_siaf              varchar        not null
+    area_siaf                varchar        not null
         constraint hechos_institucional_consolidados_dm_area_area_siaf_fk
             references sistema_informacion_gerencial.dm_area,
-    num_certificado        varchar        not null,
-    anio                   integer        not null,
-    monto_certificado      numeric(19, 2) not null,
-    id_hecho_institucional bigint         not null,
-    monto_expediente       numeric(19, 2),
-    fuente_siaf            varchar        not null
+    num_certificado          varchar        not null,
+    anio                     integer        not null,
+    monto_certificado        numeric(19, 2) not null,
+    id_hecho_institucional   bigint         not null,
+    monto_devengado          numeric(19, 2),
+    fuente_siaf              varchar        not null
         constraint hechos_institucional_consolidados_dm_fuente_fuente_siaf_fk
             references sistema_informacion_gerencial.dm_fuente,
-    generica_siaf          varchar        not null
+    generica_siaf            varchar        not null
         constraint hechos_institucional_consolidados_dm_generica_generica_siaf_fk
             references sistema_informacion_gerencial.dm_generica,
+    idclasificador_siaf      varchar,
+    clasificador_siaf        varchar,
+    monto_compromiso_anual   numeric(19, 2),
+    monto_compromiso_mensual numeric(19, 2),
+    monto_girado             numeric(19, 2),
     constraint hechos_institucional_consolidados_pk
         primary key (id_hecho_institucional, anio)
 )
-    partition by LIST (anio);
+partition by LIST (anio);
 
-alter table sistema_informacion_gerencial.hechos_institucional_consolidados
-    owner to postgres;
+
 -------5
 create table if not exists sistema_informacion_gerencial.dm_pim
 (
@@ -80,8 +79,7 @@ create table if not exists sistema_informacion_gerencial.dm_pim
     generica_siaf varchar
 );
 
-alter table sistema_informacion_gerencial.dm_pim
-    owner to postgres;
+
 -------6
 create table if not exists sistema_informacion_gerencial.hechos_pim
 (
@@ -94,8 +92,7 @@ create table if not exists sistema_informacion_gerencial.hechos_pim
 )
     partition by LIST (anio);
 
-alter table sistema_informacion_gerencial.hechos_pim
-    owner to postgres;
+
 
 -------7
 create table if not exists sistema_informacion_gerencial.dm_certificado
@@ -126,8 +123,7 @@ create table if not exists sistema_informacion_gerencial.dm_certificado
 )
     partition by LIST (anio);
 
-alter table sistema_informacion_gerencial.dm_certificado
-    owner to postgres;
+
 -------8
 create table if not exists sistema_informacion_gerencial.dm_expediente
 (
@@ -155,8 +151,7 @@ create table if not exists sistema_informacion_gerencial.dm_expediente
 )
     partition by LIST (anio);
 
-alter table sistema_informacion_gerencial.dm_expediente
-    owner to postgres;
+
 
 -------9
 create table if not exists sistema_informacion_gerencial.vw_obras_materializada
@@ -182,8 +177,7 @@ create table if not exists sistema_informacion_gerencial.vw_obras_materializada
     oficina           varchar
 );
 
-alter table sistema_informacion_gerencial.vw_obras_materializada
-    owner to postgres;
+
 -------10
 create table sistema_informacion_gerencial.hechos_rrhh_consolidados
 (
@@ -212,8 +206,7 @@ create table sistema_informacion_gerencial.hechos_rrhh_consolidados
 )
     partition by LIST (anio);
 
-alter table sistema_informacion_gerencial.hechos_rrhh_consolidados
-    owner to postgres;
+
 
 create table if not exists sistema_informacion_gerencial.dm_clasificador
 (
@@ -226,8 +219,7 @@ create table if not exists sistema_informacion_gerencial.dm_clasificador
                                                                    (COALESCE(clasificador, ''::character varying))::text))) stored
 );
 
-alter table sistema_informacion_gerencial.dm_clasificador
-    owner to postgres;
+
 
 
 
@@ -240,8 +232,7 @@ create table if not exists sistema_informacion_gerencial.dm_pim_clasificador
     monto_pim           numeric(19, 2)
 );
 
-alter table sistema_informacion_gerencial.dm_pim_clasificador
-    owner to postgres;
+
 
 -----
 CREATE MATERIALIZED VIEW vm_dm_area AS SELECT * FROM sistema_informacion_gerencial.dm_area;
