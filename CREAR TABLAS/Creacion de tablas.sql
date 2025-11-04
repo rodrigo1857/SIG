@@ -278,7 +278,7 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_clasificador
     idclasificador_siaf VARCHAR,
     generica_siaf       VARCHAR,
     monto_pim           NUMERIC(19, 2)
-);
+) PARTITION BY LIST (anio);
 
 --- 4.5. vw_obras_materializada
 --- Propósito: Tabla que consolida información de obras, integrando datos logísticos
