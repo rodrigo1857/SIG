@@ -8,6 +8,15 @@
 * - Tablas de Dimensiones (dm_*): Atributos descriptivos (quién, qué, dónde).
 * - Tablas de Hechos (hechos_*): Métricas y eventos numéricos (cuánto).
 * - Vistas Materializadas (vm_*): Instantáneas para optimizar el rendimiento de consultas.
+*
+* NOTA DE ORDEN:
+* El orden de creación es crítico.
+* 1. Dimensiones "Padre" (dm_area, dm_fuente, dm_generica, dm_clasificador).
+* 2. Hechos "Central" (hechos_institucional_consolidados), que referencia a las
+* dimensiones padre.
+* 3. Dimensiones "Hijas" (dm_certificado, dm_expediente), que referencian a la
+* tabla de hechos central.
+* 4. Resto de tablas y vistas materializadas.
 ****************************************************************************************/
 
 --- Creación del nuevo esquema
@@ -17,7 +26,8 @@ CREATE SCHEMA IF NOT EXISTS sistema_informacion_gerencial;
 SET search_path TO sistema_informacion_gerencial;
 
 ------------------------------------------------------------------------------------------
--- 1. TABLAS DE DIMENSIONES (DM)
+-- 1. TABLAS DE DIMENSIONES "PADRE"
+-- (No dependen de otras tablas o solo de otras dimensiones)
 ------------------------------------------------------------------------------------------
 
 --- 1.1. dm_area
@@ -72,104 +82,9 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_clasificador
 )
 PARTITION BY LIST (anio);
 
---- 1.5. dm_pim
---- Propósito: Almacena los montos PIA y PIM, agregados por área, fuente y genérica.
-CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim
-(
-    anio          INTEGER NOT NULL,
-    fuente_siaf   VARCHAR NOT NULL,
-    id_area       INTEGER,
-    area_siaf     VARCHAR,
-    id_generica   INTEGER,
-    monto_pia     NUMERIC(19, 2) NOT NULL,
-    monto_pim     NUMERIC(19, 2) NOT NULL,
-    generica_siaf VARCHAR,
-    CONSTRAINT dm_pim_pk PRIMARY KEY (anio, id_area, fuente_siaf, generica_siaf)
-);
-
---- 1.6. dm_certificado
---- Propósito: Detalle de los certificados presupuestarios (Nivel de detalle).
----            Almacena información específica de cada certificado, vinculada a los hechos.
----            Particionada por año.
-CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_certificado
-(
-    id_hecho_institucional BIGINT,
-    anio                   INTEGER NOT NULL,
-    num_certificado        VARCHAR NOT NULL,
-    area_siaf              VARCHAR,
-    secuencia              VARCHAR NOT NULL,
-    ejecutora              VARCHAR,
-    monto_clasificador     NUMERIC(19, 2),
-    fuente_siaf            VARCHAR,
-    glosa                  VARCHAR,
-    correlativo            VARCHAR NOT NULL,
-    idclasificador_siaf    VARCHAR NOT NULL,
-    clasificador           VARCHAR,
-    generica_siaf          VARCHAR,
-    cod_doc                VARCHAR,
-    num_doc                VARCHAR,
-    estado_envio           VARCHAR,
-    estado_registro        VARCHAR,
-    fecha_creacion_clt     DATE,
-    idmeta                 VARCHAR NOT NULL,
-    codmeta                VARCHAR,
-    nomb_met_ins           VARCHAR,
-    
-    CONSTRAINT dm_certificado_hechos_institucional_consolidados_anio_id_hechos
-        FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf) 
-        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
-        
-    CONSTRAINT dm_certificado_pk
-        PRIMARY KEY (anio, id_hecho_institucional, secuencia, correlativo, idclasificador_siaf, idmeta)
-)
-PARTITION BY LIST (anio);
-
---- 1.7. dm_expediente
---- Propósito: Detalle de los expedientes SIAF (fases de Compromiso, Devengado, Girado).
----            Almacena el detalle de cada operación. Particionada por año.
-CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_expediente
-(
-    anio                   INTEGER NOT NULL,
-    ejecutora              CHAR(6),
-    expediente             VARCHAR NOT NULL,
-    fase                   VARCHAR,
-    secuencia              VARCHAR NOT NULL,
-    correlativo            VARCHAR NOT NULL,
-    ciclo                  VARCHAR,
-    fecha_autorizacion     DATE,
-    clasificador           VARCHAR,
-    monto_nacional         NUMERIC(19, 2),
-    cod_doc                VARCHAR NOT NULL,
-    num_doc                VARCHAR,
-    estado_envio           VARCHAR,
-    idclasificador_siaf    VARCHAR NOT NULL,
-    trimestre              INTEGER,
-    id_hecho_institucional BIGINT NOT NULL,
-    certificado            VARCHAR,
-    certificado_secuencia  VARCHAR,
-    
-    CONSTRAINT dm_expediente_hechos_institucional_consolidados_id_hechos_insti
-        FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf) 
-        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
-        
-    CONSTRAINT dm_expediente_pk
-        PRIMARY KEY (anio, id_hecho_institucional, expediente, secuencia, correlativo, idclasificador_siaf, ciclo, fase)
-)
-PARTITION BY LIST (anio);
-
---- 1.8. dm_pim_clasificador
---- Propósito: Tabla agregada que almacena el monto PIM a nivel de clasificador.
-CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_clasificador
-(
-    anio                INTEGER,
-    fuente_siaf         VARCHAR,
-    idclasificador_siaf VARCHAR,
-    generica_siaf       VARCHAR,
-    monto_pim           NUMERIC(19, 2)
-);
-
 ------------------------------------------------------------------------------------------
--- 2. TABLAS DE HECHOS (HECHOS)
+-- 2. TABLA DE HECHOS CENTRAL
+-- (Referencia a las dimensiones "Padre")
 ------------------------------------------------------------------------------------------
 
 --- 2.1. hechos_institucional_consolidados
@@ -177,6 +92,8 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_clasificador
 ---            Consolida los montos de las fases del gasto (Certificado, Compromiso, Devengado, Girado)
 ---            a nivel de área, fuente, genérica y clasificador. Es el núcleo del análisis.
 ---            Particionada por año.
+---
+---            *** DEBE CREARSE ANTES de dm_certificado y dm_expediente ***
 CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_institucional_consolidados
 (
     area_siaf                 VARCHAR NOT NULL,
@@ -210,7 +127,103 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_institucional_co
 )
 PARTITION BY LIST (anio);
 
---- 2.2. hechos_pim
+------------------------------------------------------------------------------------------
+-- 3. TABLAS DE DIMENSIONES "HIJAS" / DETALLE
+-- (Dependen de la tabla de Hechos Central)
+------------------------------------------------------------------------------------------
+
+--- 3.1. dm_certificado
+--- Propósito: Detalle de los certificados presupuestarios (Nivel de detalle).
+---            Almacena información específica de cada certificado, vinculada a los hechos.
+---            Particionada por año.
+---            *** DEPENDE DE hechos_institucional_consolidados ***
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_certificado
+(
+    id_hecho_institucional BIGINT,
+    anio                   INTEGER NOT NULL,
+    num_certificado        VARCHAR NOT NULL,
+    area_siaf              VARCHAR,
+    secuencia              VARCHAR NOT NULL,
+    ejecutora              VARCHAR,
+    monto_clasificador     NUMERIC(19, 2),
+    fuente_siaf            VARCHAR,
+    glosa                  VARCHAR,
+    correlativo            VARCHAR NOT NULL,
+    idclasificador_siaf    VARCHAR NOT NULL,
+    clasificador           VARCHAR,
+    generica_siaf          VARCHAR,
+    cod_doc                VARCHAR,
+    num_doc                VARCHAR,
+    estado_envio           VARCHAR,
+    estado_registro        VARCHAR,
+    fecha_creacion_clt     DATE,
+    idmeta                 VARCHAR NOT NULL,
+    codmeta                VARCHAR,
+    nomb_met_ins           VARCHAR,
+    
+    CONSTRAINT dm_certificado_hechos_institucional_consolidados_anio_id_hechos
+        FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf) 
+        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
+        
+    CONSTRAINT dm_certificado_pk
+        PRIMARY KEY (anio, id_hecho_institucional, secuencia, correlativo, idclasificador_siaf, idmeta)
+)
+PARTITION BY LIST (anio);
+
+--- 3.2. dm_expediente
+--- Propósito: Detalle de los expedientes SIAF (fases de Compromiso, Devengado, Girado).
+---            Almacena el detalle de cada operación. Particionada por año.
+---            *** DEPENDE DE hechos_institucional_consolidados ***
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_expediente
+(
+    anio                   INTEGER NOT NULL,
+    ejecutora              CHAR(6),
+    expediente             VARCHAR NOT NULL,
+    fase                   VARCHAR,
+    secuencia              VARCHAR NOT NULL,
+    correlativo            VARCHAR NOT NULL,
+    ciclo                  VARCHAR,
+    fecha_autorizacion     DATE,
+    clasificador           VARCHAR,
+    monto_nacional         NUMERIC(19, 2),
+    cod_doc                VARCHAR NOT NULL,
+    num_doc                VARCHAR,
+    estado_envio           VARCHAR,
+    idclasificador_siaf    VARCHAR NOT NULL,
+    trimestre              INTEGER,
+    id_hecho_institucional BIGINT NOT NULL,
+    certificado            VARCHAR,
+    certificado_secuencia  VARCHAR,
+    
+    CONSTRAINT dm_expediente_hechos_institucional_consolidados_id_hechos_insti
+        FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf) 
+        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
+        
+    CONSTRAINT dm_expediente_pk
+        PRIMARY KEY (anio, id_hecho_institucional, expediente, secuencia, correlativo, idclasificador_siaf, ciclo, fase)
+)
+PARTITION BY LIST (anio);
+
+------------------------------------------------------------------------------------------
+-- 4. RESTO DE TABLAS (DIMENSIONES, HECHOS Y TABLAS DE TRABAJO)
+------------------------------------------------------------------------------------------
+
+--- 4.1. dm_pim
+--- Propósito: Almacena los montos PIA y PIM, agregados por área, fuente y genérica.
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim
+(
+    anio          INTEGER NOT NULL,
+    fuente_siaf   VARCHAR NOT NULL,
+    id_area       INTEGER,
+    area_siaf     VARCHAR,
+    id_generica   INTEGER,
+    monto_pia     NUMERIC(19, 2) NOT NULL,
+    monto_pim     NUMERIC(19, 2) NOT NULL,
+    generica_siaf VARCHAR,
+    CONSTRAINT dm_pim_pk PRIMARY KEY (anio, id_area, fuente_siaf, generica_siaf)
+);
+
+--- 4.2. hechos_pim
 --- Propósito: Tabla de hechos (o instantánea) que almacena los montos del PIA y PIM
 ---            a nivel de ejecutora, fuente y genérica. Particionada por año.
 CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_pim
@@ -225,7 +238,7 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_pim
 )
 PARTITION BY LIST (anio);
 
---- 2.3. hechos_rrhh_consolidados
+--- 4.3. hechos_rrhh_consolidados
 --- Propósito: Tabla de hechos para gastos de Recursos Humanos.
 ---            Consolida montos de planillas, número de trabajadores, vinculado a
 ---            clasificadores y metas. Particionada por año.
@@ -256,11 +269,18 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_rrhh_consolidado
 )
 PARTITION BY LIST (anio);
 
-------------------------------------------------------------------------------------------
--- 3. TABLAS ADICIONALES (Posiblemente Vistas Materializadas como Tablas)
-------------------------------------------------------------------------------------------
+--- 4.4. dm_pim_clasificador
+--- Propósito: Tabla agregada que almacena el monto PIM a nivel de clasificador.
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_clasificador
+(
+    anio                INTEGER,
+    fuente_siaf         VARCHAR,
+    idclasificador_siaf VARCHAR,
+    generica_siaf       VARCHAR,
+    monto_pim           NUMERIC(19, 2)
+);
 
---- 3.1. vw_obras_materializada
+--- 4.5. vw_obras_materializada
 --- Propósito: Tabla que consolida información de obras, integrando datos logísticos
 ---            (requerimiento, OC) con datos financieros (SIAF, certificado).
 ---            (Nota: Está definida como CREATE TABLE, no como VISTA).
@@ -287,11 +307,12 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.vw_obras_materializada
     oficina           VARCHAR
 );
 
+
 ------------------------------------------------------------------------------------------
--- 4. VISTAS MATERIALIZADAS (VM)
+-- 5. VISTAS MATERIALIZADAS (VM)
 ------------------------------------------------------------------------------------------
 
---- 4.1. VISTAS MATERIALIZADAS SIMPLES
+--- 5.1. VISTAS MATERIALIZADAS SIMPLES
 --- Propósito: Instantáneas 1:1 de las tablas base para optimizar consultas.
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_area 
@@ -326,9 +347,9 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_pim
     AS SELECT * FROM sistema_informacion_gerencial.dm_pim;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_pim ON vm_dm_pim(anio, id_area, fuente_siaf, generica_siaf);
 
---- 4.2. VISTAS MATERIALIZADAS COMPLEJAS
+--- 5.2. VISTAS MATERIALIZADAS COMPLEJAS
 
---- 4.2.1. vm_pim_clasificador
+--- 5.2.1. vm_pim_clasificador
 --- Propósito: Consolida el PIM y el Devengado por clasificador.
 ---            Une datos del SIAF (devengados de expedientes) y de RRHH (Q20, devengados de planillas).
 ---            Agrupa los devengados por origen (SIAF, Q20) en un campo JSONB.
@@ -450,7 +471,7 @@ ORDER BY
 ALTER MATERIALIZED VIEW IF EXISTS sistema_informacion_gerencial.vm_pim_clasificador OWNER TO postgres;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_pim_clasificador ON sistema_informacion_gerencial.vm_pim_clasificador(anio, fuente_siaf, idclasificador_siaf, origen);
 
---- 4.2.2. vm_search_clasificador_area
+--- 5.2.2. vm_search_clasificador_area
 --- Propósito: Agrega el monto devengado por clasificador y área.
 ---            Une devengados SIAF y RRHH (Q20).
 ---            Incluye lógica de negocio para agrupar áreas:
