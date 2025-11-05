@@ -75,12 +75,12 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_clasificador
     clasificador        VARCHAR,
     descripcion         VARCHAR,
     fts_clasificador    TSVECTOR GENERATED ALWAYS AS (to_tsvector('spanish'::regconfig,
-                            (COALESCE(descripcion, '')::TEXT || ' '::TEXT) || (COALESCE(clasificador, '')::TEXT)
-                        )) STORED,
+                                                                  (COALESCE(descripcion, '')::TEXT || ' '::TEXT) || (COALESCE(clasificador, '')::TEXT)
+                                                      )) STORED,
     anio                INTEGER NOT NULL,
     CONSTRAINT dm_clasificador_pk PRIMARY KEY (anio, idclasificador_siaf)
 )
-PARTITION BY LIST (anio);
+    PARTITION BY LIST (anio);
 
 ------------------------------------------------------------------------------------------
 -- 2. TABLA DE HECHOS CENTRAL
@@ -109,23 +109,23 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_institucional_co
     monto_compromiso_anual    NUMERIC(19, 2),
     monto_compromiso_mensual  NUMERIC(19, 2),
     monto_girado              NUMERIC(19, 2),
-    
-    CONSTRAINT hechos_institucional_consolidados_pk 
+
+    CONSTRAINT hechos_institucional_consolidados_pk
         PRIMARY KEY (id_hecho_institucional, idclasificador_siaf, anio),
-    
-    CONSTRAINT hechos_institucional_consolidados_dm_area_area_siaf_fk 
+
+    CONSTRAINT hechos_institucional_consolidados_dm_area_area_siaf_fk
         FOREIGN KEY (area_siaf) REFERENCES sistema_informacion_gerencial.dm_area (area_siaf),
-    
-    CONSTRAINT hechos_institucional_consolidados_dm_clasificador_idclasificado 
+
+    CONSTRAINT hechos_institucional_consolidados_dm_clasificador_idclasificado
         FOREIGN KEY (anio, idclasificador_siaf) REFERENCES sistema_informacion_gerencial.dm_clasificador (anio, idclasificador_siaf),
-    
-    CONSTRAINT hechos_institucional_consolidados_dm_fuente_fuente_siaf_fk 
+
+    CONSTRAINT hechos_institucional_consolidados_dm_fuente_fuente_siaf_fk
         FOREIGN KEY (fuente_siaf) REFERENCES sistema_informacion_gerencial.dm_fuente (fuente_siaf),
-    
-    CONSTRAINT hechos_institucional_consolidados_dm_generica_generica_siaf_fk 
+
+    CONSTRAINT hechos_institucional_consolidados_dm_generica_generica_siaf_fk
         FOREIGN KEY (generica_siaf) REFERENCES sistema_informacion_gerencial.dm_generica (generica_siaf)
 )
-PARTITION BY LIST (anio);
+    PARTITION BY LIST (anio);
 
 ------------------------------------------------------------------------------------------
 -- 3. TABLAS DE DIMENSIONES "HIJAS" / DETALLE
@@ -160,15 +160,15 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_certificado
     idmeta                 VARCHAR NOT NULL,
     codmeta                VARCHAR,
     nomb_met_ins           VARCHAR,
-    
+
     CONSTRAINT dm_certificado_hechos_institucional_consolidados_anio_id_hechos
-        FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf) 
-        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
-        
+        FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf)
+            REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
+
     CONSTRAINT dm_certificado_pk
         PRIMARY KEY (anio, id_hecho_institucional, secuencia, correlativo, idclasificador_siaf, idmeta)
 )
-PARTITION BY LIST (anio);
+    PARTITION BY LIST (anio);
 
 --- 3.2. dm_expediente
 --- Propósito: Detalle de los expedientes SIAF (fases de Compromiso, Devengado, Girado).
@@ -194,23 +194,40 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_expediente
     id_hecho_institucional BIGINT NOT NULL,
     certificado            VARCHAR,
     certificado_secuencia  VARCHAR,
-    
+
     CONSTRAINT dm_expediente_hechos_institucional_consolidados_id_hechos_insti
-        FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf) 
-        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
-        
+        FOREIGN KEY (anio, id_hecho_institucional, idclasificador_siaf)
+            REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (anio, id_hecho_institucional, idclasificador_siaf),
+
     CONSTRAINT dm_expediente_pk
         PRIMARY KEY (anio, id_hecho_institucional, expediente, secuencia, correlativo, idclasificador_siaf, ciclo, fase)
 )
-PARTITION BY LIST (anio);
+    PARTITION BY LIST (anio);
 
 ------------------------------------------------------------------------------------------
 -- 4. RESTO DE TABLAS (DIMENSIONES, HECHOS Y TABLAS DE TRABAJO)
+-- (SECCIÓN REORDENADA PARA CORREGIR DEPENDENCIAS)
 ------------------------------------------------------------------------------------------
 
---- 4.1. dm_pim
---- Propósito: Almacena los montos PIA y PIM, agregados por área, fuente y genérica.
+--- 4.1. hechos_pim (MOVILIZADA)
+--- Propósito: Tabla de hechos (o instantánea) que almacena los montos del PIA y PIM
+---            a nivel de ejecutora, fuente y genérica. Particionada por año.
+---            *** DEBE CREARSE ANTES de dm_pim_q20 y dm_pim_clasificador ***
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_pim
+(
+    anio          INTEGER NOT NULL,
+    ejecutora     VARCHAR NOT NULL,
+    fuente_siaf   VARCHAR NOT NULL,
+    generica_siaf VARCHAR NOT NULL,
+    monto_pia     NUMERIC(19, 2),
+    monto_pim     NUMERIC(19, 2),
+    CONSTRAINT hechos_pim_pk PRIMARY KEY (anio, ejecutora, fuente_siaf, generica_siaf)
+)
+    PARTITION BY LIST (anio);
 
+--- 4.2. dm_pim_q20 (DEPENDE DE hechos_pim)
+--- Propósito: Almacena los montos PIA y PIM, agregados por área, fuente y genérica.
+---            *** DEPENDE DE hechos_pim ***
 CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_q20
 (
     anio integer NOT NULL,
@@ -223,25 +240,25 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_q20
     generica_siaf character varying COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT dm_pim_q20_pk PRIMARY KEY (anio, id_area, fuente_siaf, generica_siaf),
     CONSTRAINT dm_pim_q20_hechos_pim_anio_fuente_siaf_generica_siaf_fk FOREIGN KEY (generica_siaf, fuente_siaf, anio)
-    REFERENCES sistema_informacion_gerencial.hechos_pim (generica_siaf, fuente_siaf, anio)
+        REFERENCES sistema_informacion_gerencial.hechos_pim (generica_siaf, fuente_siaf, anio)
 ) PARTITION BY LIST (anio);
 
---- 4.2. hechos_pim
---- Propósito: Tabla de hechos (o instantánea) que almacena los montos del PIA y PIM
----            a nivel de ejecutora, fuente y genérica. Particionada por año.
-CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_pim
+--- 4.3. dm_pim_clasificador (DEPENDE DE hechos_pim)
+--- Propósito: Tabla agregada que almacena el monto PIM a nivel de clasificador.
+---            *** DEPENDE DE hechos_pim ***
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_clasificador
 (
-    anio          INTEGER NOT NULL,
-    ejecutora     VARCHAR NOT NULL,
-    fuente_siaf   VARCHAR NOT NULL,
-    generica_siaf VARCHAR NOT NULL,
-    monto_pia     NUMERIC(19, 2),
-    monto_pim     NUMERIC(19, 2),
-    CONSTRAINT hechos_pim_pk PRIMARY KEY (anio, ejecutora, fuente_siaf, generica_siaf)
-)
-PARTITION BY LIST (anio);
+    anio integer NOT NULL,
+    fuente_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    idclasificador_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    generica_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    monto_pim numeric(19,2),
+    CONSTRAINT dm_pim_clasificador_pk PRIMARY KEY (anio, fuente_siaf, generica_siaf, idclasificador_siaf),
+    CONSTRAINT dm_pim_clasificador_hechos_pim_anio_fuente_siaf_generica_siaf_f FOREIGN KEY (generica_siaf, fuente_siaf, anio)
+        REFERENCES sistema_informacion_gerencial.hechos_pim (generica_siaf, fuente_siaf, anio)
+) PARTITION BY LIST (anio);
 
---- 4.3. hechos_rrhh_consolidados
+--- 4.4. hechos_rrhh_consolidados
 --- Propósito: Tabla de hechos para gastos de Recursos Humanos.
 ---            Consolida montos de planillas, número de trabajadores, vinculado a
 ---            clasificadores y metas. Particionada por año.
@@ -266,25 +283,11 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_rrhh_consolidado
     monto_expediente       NUMERIC(19, 2),
     id_meta                INTEGER NOT NULL,
     cod_meta               VARCHAR NOT NULL,
-    
+
     CONSTRAINT hechos_rrhh_consolidados_pk
         PRIMARY KEY (id_meta, id_planilla, area_siaf, idclasificador_siaf, fuente_siaf, generica_siaf, certificado, anio)
 )
-PARTITION BY LIST (anio);
-
---- 4.4. dm_pim_clasificador
---- Propósito: Tabla agregada que almacena el monto PIM a nivel de clasificador.
-CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_clasificador
-(
-    anio integer NOT NULL,
-    fuente_siaf character varying COLLATE pg_catalog."default" NOT NULL,
-    idclasificador_siaf character varying COLLATE pg_catalog."default" NOT NULL,
-    generica_siaf character varying COLLATE pg_catalog."default" NOT NULL,
-    monto_pim numeric(19,2),
-    CONSTRAINT dm_pim_clasificador_pk PRIMARY KEY (anio, fuente_siaf, generica_siaf, idclasificador_siaf),
-    CONSTRAINT dm_pim_clasificador_hechos_pim_anio_fuente_siaf_generica_siaf_f FOREIGN KEY (generica_siaf, fuente_siaf, anio)
-    REFERENCES sistema_informacion_gerencial.hechos_pim (generica_siaf, fuente_siaf, anio)
-) PARTITION BY LIST (anio);
+    PARTITION BY LIST (anio);
 
 --- 4.5. vw_obras_materializada
 --- Propósito: Tabla que consolida información de obras, integrando datos logísticos
@@ -321,32 +324,32 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.vw_obras_materializada
 --- 5.1. VISTAS MATERIALIZADAS SIMPLES
 --- Propósito: Instantáneas 1:1 de las tablas base para optimizar consultas.
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_area 
-    AS SELECT * FROM sistema_informacion_gerencial.dm_area;
+CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_area
+AS SELECT * FROM sistema_informacion_gerencial.dm_area;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_area ON sistema_informacion_gerencial.sistema_informacion_gerencial.vm_dm_area(area_siaf);
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_fuente 
-    AS SELECT * FROM sistema_informacion_gerencial.dm_fuente;
+CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_fuente
+AS SELECT * FROM sistema_informacion_gerencial.dm_fuente;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_fuente ON sistema_informacion_gerencial.vm_dm_fuente(fuente_siaf);
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_generica 
-    AS SELECT * FROM sistema_informacion_gerencial.dm_generica;
+CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_generica
+AS SELECT * FROM sistema_informacion_gerencial.dm_generica;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_generica ON sistema_informacion_gerencial.vm_dm_generica(generica_siaf);
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS vm_hechos_institucional_consolidados 
-    AS SELECT * FROM sistema_informacion_gerencial.hechos_institucional_consolidados;
+CREATE MATERIALIZED VIEW IF NOT EXISTS vm_hechos_institucional_consolidados
+AS SELECT * FROM sistema_informacion_gerencial.hechos_institucional_consolidados;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_hechos_institucional_consolidados ON  sistema_informacion_gerencial.vm_hechos_institucional_consolidados(id_hecho_institucional, idclasificador_siaf, anio);
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_certificado 
-    AS SELECT * FROM sistema_informacion_gerencial.dm_certificado;
+CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_certificado
+AS SELECT * FROM sistema_informacion_gerencial.dm_certificado;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_certificado ON sistema_informacion_gerencial.vm_dm_certificado(anio, id_hecho_institucional, secuencia, correlativo, idclasificador_siaf, idmeta);
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_expediente 
-    AS SELECT * FROM sistema_informacion_gerencial.dm_expediente;
+CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_expediente
+AS SELECT * FROM sistema_informacion_gerencial.dm_expediente;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_expediente ON sistema_informacion_gerencial.vm_dm_expediente(anio, id_hecho_institucional, expediente, secuencia, correlativo, idclasificador_siaf, ciclo, fase);
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS vm_hechos_pim 
-    AS SELECT * FROM sistema_informacion_gerencial.hechos_pim;
+CREATE MATERIALIZED VIEW IF NOT EXISTS vm_hechos_pim
+AS SELECT * FROM sistema_informacion_gerencial.hechos_pim;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_hechos_pim ON sistema_informacion_gerencial.vm_hechos_pim(anio, ejecutora, fuente_siaf, generica_siaf);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS sistema_informacion_gerencial.vm_dm_pim_q20
@@ -369,8 +372,8 @@ WITH
             sum(de.monto_nacional) AS monto_devengado
         FROM
             sistema_informacion_gerencial.dm_expediente de
-            JOIN sistema_informacion_gerencial.hechos_institucional_consolidados hic
-                 ON de.id_hecho_institucional = hic.id_hecho_institucional
+                JOIN sistema_informacion_gerencial.hechos_institucional_consolidados hic
+                     ON de.id_hecho_institucional = hic.id_hecho_institucional
         WHERE
             de.ciclo = 'G' AND de.fase = 'D'
         GROUP BY
@@ -390,9 +393,9 @@ WITH
             dpc.monto_pim
         FROM
             sistema_informacion_gerencial.dm_pim_clasificador dpc
-            JOIN sistema_informacion_gerencial.dm_clasificador dcla
-                 ON dpc.idclasificador_siaf::TEXT = dcla.idclasificador_siaf::TEXT
-                 AND dpc.anio = dcla.anio
+                JOIN sistema_informacion_gerencial.dm_clasificador dcla
+                     ON dpc.idclasificador_siaf::TEXT = dcla.idclasificador_siaf::TEXT
+                         AND dpc.anio = dcla.anio
     ),
     unioned AS (
         -- Devengados del SIAF
@@ -409,10 +412,10 @@ WITH
             dxc.monto_devengado
         FROM
             pim_x_clasificador pxc
-            JOIN devengado_x_clasificador dxc
-                 ON pxc.anio = dxc.anio
-                 AND pxc.fuente_siaf::TEXT = dxc.fuente_siaf::TEXT
-                 AND pxc.idclasificador_siaf::TEXT = dxc.idclasificador_siaf::TEXT
+                JOIN devengado_x_clasificador dxc
+                     ON pxc.anio = dxc.anio
+                         AND pxc.fuente_siaf::TEXT = dxc.fuente_siaf::TEXT
+                         AND pxc.idclasificador_siaf::TEXT = dxc.idclasificador_siaf::TEXT
         WHERE
             pxc.monto_pim > 0::NUMERIC
         UNION ALL
@@ -430,13 +433,13 @@ WITH
             sum(hrc.monto_expediente) AS monto_devengado
         FROM
             sistema_informacion_gerencial.hechos_rrhh_consolidados hrc
-            JOIN sistema_informacion_gerencial.dm_clasificador dc
-                 ON hrc.idclasificador_siaf::TEXT = dc.idclasificador_siaf::TEXT
-                 AND hrc.anio = dc.anio
-            JOIN sistema_informacion_gerencial.dm_pim_clasificador dpc
-                 ON hrc.anio = dpc.anio
-                 AND hrc.fuente_siaf::TEXT = dpc.fuente_siaf::TEXT
-                 AND hrc.idclasificador_siaf::TEXT = dpc.idclasificador_siaf::TEXT
+                JOIN sistema_informacion_gerencial.dm_clasificador dc
+                     ON hrc.idclasificador_siaf::TEXT = dc.idclasificador_siaf::TEXT
+                         AND hrc.anio = dc.anio
+                JOIN sistema_informacion_gerencial.dm_pim_clasificador dpc
+                     ON hrc.anio = dpc.anio
+                         AND hrc.fuente_siaf::TEXT = dpc.fuente_siaf::TEXT
+                         AND hrc.idclasificador_siaf::TEXT = dpc.idclasificador_siaf::TEXT
         GROUP BY
             hrc.anio,
             dc.idclasificador_siaf,
@@ -498,13 +501,13 @@ SELECT
     sum(de.monto_nacional) AS monto_devengado
 FROM
     sistema_informacion_gerencial.vm_dm_expediente de
-    JOIN sistema_informacion_gerencial.vm_hechos_institucional_consolidados hic
-         ON de.id_hecho_institucional = hic.id_hecho_institucional
-    JOIN sistema_informacion_gerencial.dm_clasificador dcl
-         ON de.idclasificador_siaf::TEXT = dcl.idclasificador_siaf::TEXT
-         AND dcl.anio = hic.anio
-    JOIN sistema_informacion_gerencial.dm_area da
-         ON hic.area_siaf::TEXT = da.area_siaf::TEXT
+        JOIN sistema_informacion_gerencial.vm_hechos_institucional_consolidados hic
+             ON de.id_hecho_institucional = hic.id_hecho_institucional
+        JOIN sistema_informacion_gerencial.dm_clasificador dcl
+             ON de.idclasificador_siaf::TEXT = dcl.idclasificador_siaf::TEXT
+                 AND dcl.anio = hic.anio
+        JOIN sistema_informacion_gerencial.dm_area da
+             ON hic.area_siaf::TEXT = da.area_siaf::TEXT
 WHERE
     da.id_superior = 10468 AND de.ciclo = 'G' AND de.fase = 'D'
 GROUP BY
@@ -528,17 +531,17 @@ SELECT
     sum(de.monto_nacional) AS monto_devengado
 FROM
     sistema_informacion_gerencial.vm_dm_expediente de
-    JOIN sistema_informacion_gerencial.vm_hechos_institucional_consolidados hic
-         ON de.id_hecho_institucional = hic.id_hecho_institucional
-    JOIN sistema_informacion_gerencial.dm_clasificador dcl
-         ON de.idclasificador_siaf::TEXT = dcl.idclasificador_siaf::TEXT
-         AND dcl.anio = hic.anio
-    JOIN sistema_informacion_gerencial.dm_area da
-         ON hic.area_siaf::TEXT = da.area_siaf::TEXT
+        JOIN sistema_informacion_gerencial.vm_hechos_institucional_consolidados hic
+             ON de.id_hecho_institucional = hic.id_hecho_institucional
+        JOIN sistema_informacion_gerencial.dm_clasificador dcl
+             ON de.idclasificador_siaf::TEXT = dcl.idclasificador_siaf::TEXT
+                 AND dcl.anio = hic.anio
+        JOIN sistema_informacion_gerencial.dm_area da
+             ON hic.area_siaf::TEXT = da.area_siaf::TEXT
 WHERE
     (da.id_superior <> 10468 OR da.id_superior IS NULL)
-    AND de.ciclo = 'G'
-    AND de.fase = 'D'
+  AND de.ciclo = 'G'
+  AND de.fase = 'D'
 GROUP BY
     de.idclasificador_siaf, de.anio, dcl.descripcion, hic.fuente_siaf,
     dcl.clasificador, dcl.generica
@@ -559,11 +562,11 @@ SELECT
     sum(hrc.monto_expediente) AS monto_devengado
 FROM
     sistema_informacion_gerencial.hechos_rrhh_consolidados hrc
-    JOIN sistema_informacion_gerencial.dm_clasificador dc
-         ON hrc.idclasificador_siaf::TEXT = dc.idclasificador_siaf::TEXT
-         AND hrc.anio = dc.anio
-    JOIN sistema_informacion_gerencial.dm_area da
-         ON hrc.area_siaf::TEXT = da.area_siaf::TEXT
+        JOIN sistema_informacion_gerencial.dm_clasificador dc
+             ON hrc.idclasificador_siaf::TEXT = dc.idclasificador_siaf::TEXT
+                 AND hrc.anio = dc.anio
+        JOIN sistema_informacion_gerencial.dm_area da
+             ON hrc.area_siaf::TEXT = da.area_siaf::TEXT
 WHERE
     da.id_superior = 10468
 GROUP BY
@@ -586,11 +589,11 @@ SELECT DISTINCT
     sum(hrc.monto_expediente) AS monto_devengado
 FROM
     sistema_informacion_gerencial.hechos_rrhh_consolidados hrc
-    JOIN sistema_informacion_gerencial.dm_clasificador dc
-         ON hrc.idclasificador_siaf::TEXT = dc.idclasificador_siaf::TEXT
-         AND hrc.anio = dc.anio
-    JOIN sistema_informacion_gerencial.dm_area da
-         ON hrc.area_siaf::TEXT = da.area_siaf::TEXT
+        JOIN sistema_informacion_gerencial.dm_clasificador dc
+             ON hrc.idclasificador_siaf::TEXT = dc.idclasificador_siaf::TEXT
+                 AND hrc.anio = dc.anio
+        JOIN sistema_informacion_gerencial.dm_area da
+             ON hrc.area_siaf::TEXT = da.area_siaf::TEXT
 WHERE
     da.id_superior <> 10468 OR da.id_superior IS NULL
 GROUP BY
