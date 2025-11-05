@@ -210,18 +210,21 @@ PARTITION BY LIST (anio);
 
 --- 4.1. dm_pim
 --- Propósito: Almacena los montos PIA y PIM, agregados por área, fuente y genérica.
-CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim
+
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_q20
 (
-    anio          INTEGER NOT NULL,
-    fuente_siaf   VARCHAR NOT NULL,
-    id_area       INTEGER,
-    area_siaf     VARCHAR,
-    id_generica   INTEGER,
-    monto_pia     NUMERIC(19, 2) NOT NULL,
-    monto_pim     NUMERIC(19, 2) NOT NULL,
-    generica_siaf VARCHAR,
-    CONSTRAINT dm_pim_pk PRIMARY KEY (anio, id_area, fuente_siaf, generica_siaf)
-);
+    anio integer NOT NULL,
+    fuente_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    id_area integer NOT NULL,
+    area_siaf character varying COLLATE pg_catalog."default",
+    id_generica integer,
+    monto_pia numeric(19,2) NOT NULL,
+    monto_pim numeric(19,2) NOT NULL,
+    generica_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT dm_pim_q20_pk PRIMARY KEY (anio, id_area, fuente_siaf, generica_siaf),
+    CONSTRAINT dm_pim_q20_hechos_pim_anio_fuente_siaf_generica_siaf_fk FOREIGN KEY (generica_siaf, fuente_siaf, anio)
+    REFERENCES sistema_informacion_gerencial.hechos_pim (generica_siaf, fuente_siaf, anio)
+) PARTITION BY LIST (anio);
 
 --- 4.2. hechos_pim
 --- Propósito: Tabla de hechos (o instantánea) que almacena los montos del PIA y PIM
@@ -273,11 +276,14 @@ PARTITION BY LIST (anio);
 --- Propósito: Tabla agregada que almacena el monto PIM a nivel de clasificador.
 CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_pim_clasificador
 (
-    anio                INTEGER,
-    fuente_siaf         VARCHAR,
-    idclasificador_siaf VARCHAR,
-    generica_siaf       VARCHAR,
-    monto_pim           NUMERIC(19, 2)
+    anio integer NOT NULL,
+    fuente_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    idclasificador_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    generica_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    monto_pim numeric(19,2),
+    CONSTRAINT dm_pim_clasificador_pk PRIMARY KEY (anio, fuente_siaf, generica_siaf, idclasificador_siaf),
+    CONSTRAINT dm_pim_clasificador_hechos_pim_anio_fuente_siaf_generica_siaf_f FOREIGN KEY (generica_siaf, fuente_siaf, anio)
+    REFERENCES sistema_informacion_gerencial.hechos_pim (generica_siaf, fuente_siaf, anio)
 ) PARTITION BY LIST (anio);
 
 --- 4.5. vw_obras_materializada
@@ -317,35 +323,35 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.vw_obras_materializada
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_area 
     AS SELECT * FROM sistema_informacion_gerencial.dm_area;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_area ON sistema_informacion_gerencial.vm_dm_area(area_siaf);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_area ON sistema_informacion_gerencial.sistema_informacion_gerencial.vm_dm_area(area_siaf);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_fuente 
     AS SELECT * FROM sistema_informacion_gerencial.dm_fuente;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_fuente ON vm_dm_fuente(fuente_siaf);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_fuente ON sistema_informacion_gerencial.vm_dm_fuente(fuente_siaf);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_generica 
     AS SELECT * FROM sistema_informacion_gerencial.dm_generica;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_generica ON vm_dm_generica(generica_siaf);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_generica ON sistema_informacion_gerencial.vm_dm_generica(generica_siaf);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_hechos_institucional_consolidados 
     AS SELECT * FROM sistema_informacion_gerencial.hechos_institucional_consolidados;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_hechos_institucional_consolidados ON vm_hechos_institucional_consolidados(id_hecho_institucional, idclasificador_siaf, anio);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_hechos_institucional_consolidados ON  sistema_informacion_gerencial.vm_hechos_institucional_consolidados(id_hecho_institucional, idclasificador_siaf, anio);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_certificado 
     AS SELECT * FROM sistema_informacion_gerencial.dm_certificado;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_certificado ON vm_dm_certificado(anio, id_hecho_institucional, secuencia, correlativo, idclasificador_siaf, idmeta);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_certificado ON sistema_informacion_gerencial.vm_dm_certificado(anio, id_hecho_institucional, secuencia, correlativo, idclasificador_siaf, idmeta);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_expediente 
     AS SELECT * FROM sistema_informacion_gerencial.dm_expediente;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_expediente ON vm_dm_expediente(anio, id_hecho_institucional, expediente, secuencia, correlativo, idclasificador_siaf, ciclo, fase);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_expediente ON sistema_informacion_gerencial.vm_dm_expediente(anio, id_hecho_institucional, expediente, secuencia, correlativo, idclasificador_siaf, ciclo, fase);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_hechos_pim 
     AS SELECT * FROM sistema_informacion_gerencial.hechos_pim;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_hechos_pim ON vm_hechos_pim(anio, ejecutora, fuente_siaf, generica_siaf);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_hechos_pim ON sistema_informacion_gerencial.vm_hechos_pim(anio, ejecutora, fuente_siaf, generica_siaf);
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_pim 
-    AS SELECT * FROM sistema_informacion_gerencial.dm_pim;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_pim ON vm_dm_pim(anio, id_area, fuente_siaf, generica_siaf);
+CREATE MATERIALIZED VIEW IF NOT EXISTS sistema_informacion_gerencial.vm_dm_pim_q20
+AS SELECT * FROM sistema_informacion_gerencial.dm_pim_q20;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_pim ON sistema_informacion_gerencial.vm_dm_pim_q20(anio, id_area, fuente_siaf, generica_siaf);
 
 --- 5.2. VISTAS MATERIALIZADAS COMPLEJAS
 
