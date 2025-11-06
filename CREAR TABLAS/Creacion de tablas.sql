@@ -373,6 +373,7 @@ WITH
             sistema_informacion_gerencial.dm_expediente de
                 JOIN sistema_informacion_gerencial.hechos_institucional_consolidados hic
                      ON de.id_hecho_institucional = hic.id_hecho_institucional
+                     AND de.idclasificador_siaf = hic.idclasificador_siaf
         WHERE
             de.ciclo = 'G' AND de.fase = 'D'
         GROUP BY
