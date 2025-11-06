@@ -216,12 +216,11 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_expediente
 CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_pim
 (
     anio          INTEGER NOT NULL,
-    ejecutora     VARCHAR NOT NULL,
     fuente_siaf   VARCHAR NOT NULL,
     generica_siaf VARCHAR NOT NULL,
     monto_pia     NUMERIC(19, 2),
     monto_pim     NUMERIC(19, 2),
-    CONSTRAINT hechos_pim_pk PRIMARY KEY (anio, ejecutora, fuente_siaf, generica_siaf)
+    CONSTRAINT hechos_pim_pk PRIMARY KEY (anio,fuente_siaf, generica_siaf)
 )
     PARTITION BY LIST (anio);
 
@@ -326,7 +325,7 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.vw_obras_materializada
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_area
 AS SELECT * FROM sistema_informacion_gerencial.dm_area;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_area ON sistema_informacion_gerencial.sistema_informacion_gerencial.vm_dm_area(area_siaf);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_area ON sistema_informacion_gerencial.vm_dm_area(area_siaf);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_dm_fuente
 AS SELECT * FROM sistema_informacion_gerencial.dm_fuente;
@@ -350,7 +349,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_dm_expediente ON sistema_informacion_ge
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS vm_hechos_pim
 AS SELECT * FROM sistema_informacion_gerencial.hechos_pim;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_hechos_pim ON sistema_informacion_gerencial.vm_hechos_pim(anio, ejecutora, fuente_siaf, generica_siaf);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vm_hechos_pim ON sistema_informacion_gerencial.vm_hechos_pim(anio,fuente_siaf, generica_siaf);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS sistema_informacion_gerencial.vm_dm_pim_q20
 AS SELECT * FROM sistema_informacion_gerencial.dm_pim_q20;
