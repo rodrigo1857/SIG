@@ -127,6 +127,11 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_institucional_co
 )
     PARTITION BY LIST (anio);
 
+
+
+create unique index hechos_institucional_consolidados_num_certificado_anio_fuente_s
+    on sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado, anio, fuente_siaf, idclasificador_siaf);
+
 ------------------------------------------------------------------------------------------
 -- 3. TABLAS DE DIMENSIONES "HIJAS" / DETALLE
 -- (Dependen de la tabla de Hechos Central)
@@ -314,6 +319,37 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.vw_obras_materializada
     estado            VARCHAR,
     oficina           VARCHAR
 );
+
+--- 4.5. dm_ejecucion_q20
+--- Propósito: Tabla que consolida información de ejecucion proveniente del sistema Q20 en una tabla consolidada por
+---            certificado
+
+CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_ejecucion_q20
+(
+    id_certificacion bigint,
+    anio integer NOT NULL,
+    area_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    num_certificado character varying COLLATE pg_catalog."default" NOT NULL,
+    fuente_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    idclasificador_siaf character varying COLLATE pg_catalog."default" NOT NULL,
+    clasificador_siaf character varying COLLATE pg_catalog."default",
+    monto_certificado numeric DEFAULT 0,
+    monto_compromiso_anual numeric DEFAULT 0,
+    monto_devengado numeric DEFAULT 0,
+    monto_girado numeric DEFAULT 0,
+    CONSTRAINT dm_ejecucion_q20_pk PRIMARY KEY (anio, fuente_siaf, idclasificador_siaf, num_certificado),
+    CONSTRAINT dm_ejecucion_q20_hechos_institucional_consolidados_num_certific FOREIGN KEY (idclasificador_siaf, fuente_siaf, num_certificado, anio)
+        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (idclasificador_siaf, fuente_siaf, num_certificado, anio),
+
+    CONSTRAINT dm_ejecucion_q20_num_certificado_idclasificador_siaf_anio__fkey FOREIGN KEY (idclasificador_siaf, fuente_siaf, num_certificado, anio)
+        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados_2023 (idclasificador_siaf, fuente_siaf, num_certificado, anio),
+    CONSTRAINT dm_ejecucion_q20_num_certificado_idclasificador_siaf_anio_fkey1 FOREIGN KEY (idclasificador_siaf, fuente_siaf, num_certificado, anio)
+        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados_2024 (idclasificador_siaf, fuente_siaf, num_certificado, anio),
+    CONSTRAINT dm_ejecucion_q20_num_certificado_idclasificador_siaf_anio_fkey2 FOREIGN KEY (idclasificador_siaf, fuente_siaf, num_certificado, anio)
+        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados_2025 (idclasificador_siaf, fuente_siaf, num_certificado, anio)
+)PARTITION BY LIST (anio);
+
+
 
 
 ------------------------------------------------------------------------------------------
