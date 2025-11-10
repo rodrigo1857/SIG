@@ -143,7 +143,7 @@ create table bytsscom_bytsiaf.sig_especifica_detalle
         primary key (id_clasificador, ano_eje)
 );
 
-alter table bytsscom_bytsiaf.especifica_detalle
+alter table bytsscom_bytsiaf.sig_especifica_detalle
     owner to bytsscom_bytsiaf;
 
 
