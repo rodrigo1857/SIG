@@ -339,7 +339,7 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_ejecucion_q20
     monto_girado numeric DEFAULT 0,
     CONSTRAINT dm_ejecucion_q20_pk PRIMARY KEY (anio, fuente_siaf, idclasificador_siaf, num_certificado),
     CONSTRAINT dm_ejecucion_q20_hechos_institucional_consolidados_num_certific FOREIGN KEY (idclasificador_siaf, fuente_siaf, num_certificado, anio)
-        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (idclasificador_siaf, fuente_siaf, num_certificado, anio),
+        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (idclasificador_siaf, fuente_siaf, num_certificado, anio)
 )PARTITION BY LIST (anio);
 
 
