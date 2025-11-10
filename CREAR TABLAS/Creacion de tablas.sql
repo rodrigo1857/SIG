@@ -340,13 +340,6 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_ejecucion_q20
     CONSTRAINT dm_ejecucion_q20_pk PRIMARY KEY (anio, fuente_siaf, idclasificador_siaf, num_certificado),
     CONSTRAINT dm_ejecucion_q20_hechos_institucional_consolidados_num_certific FOREIGN KEY (idclasificador_siaf, fuente_siaf, num_certificado, anio)
         REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados (idclasificador_siaf, fuente_siaf, num_certificado, anio),
-
-    CONSTRAINT dm_ejecucion_q20_num_certificado_idclasificador_siaf_anio__fkey FOREIGN KEY (idclasificador_siaf, fuente_siaf, num_certificado, anio)
-        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados_2023 (idclasificador_siaf, fuente_siaf, num_certificado, anio),
-    CONSTRAINT dm_ejecucion_q20_num_certificado_idclasificador_siaf_anio_fkey1 FOREIGN KEY (idclasificador_siaf, fuente_siaf, num_certificado, anio)
-        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados_2024 (idclasificador_siaf, fuente_siaf, num_certificado, anio),
-    CONSTRAINT dm_ejecucion_q20_num_certificado_idclasificador_siaf_anio_fkey2 FOREIGN KEY (idclasificador_siaf, fuente_siaf, num_certificado, anio)
-        REFERENCES sistema_informacion_gerencial.hechos_institucional_consolidados_2025 (idclasificador_siaf, fuente_siaf, num_certificado, anio)
 )PARTITION BY LIST (anio);
 
 
