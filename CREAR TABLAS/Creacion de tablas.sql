@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.hechos_institucional_co
 
 
 
-create unique index hechos_institucional_consolidados_num_certificado_anio_fuente_s
+create unique index hic_num_certificado_anio_fuente_clasificador_siaf_idx
     on sistema_informacion_gerencial.hechos_institucional_consolidados (num_certificado, anio, fuente_siaf, idclasificador_siaf);
 
 ------------------------------------------------------------------------------------------
