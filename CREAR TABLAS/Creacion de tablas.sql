@@ -326,13 +326,12 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.vw_obras_materializada
 
 CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_ejecucion_q20
 (
-    id_certificacion bigint,
     anio integer NOT NULL,
-    area_siaf character varying COLLATE pg_catalog."default" NOT NULL,
-    num_certificado character varying COLLATE pg_catalog."default" NOT NULL,
-    fuente_siaf character varying COLLATE pg_catalog."default" NOT NULL,
-    idclasificador_siaf character varying COLLATE pg_catalog."default" NOT NULL,
-    clasificador_siaf character varying COLLATE pg_catalog."default",
+    area_siaf character varying VARCHAR NOT NULL,
+    num_certificado VARCHAR NOT NULL,
+    fuente_siaf character VARCHAR NOT NULL,
+    idclasificador_siaf VARCHAR NOT NULL,
+    clasificador_siaf VARCHAR,
     monto_certificado numeric DEFAULT 0,
     monto_compromiso_anual numeric DEFAULT 0,
     monto_devengado numeric DEFAULT 0,
