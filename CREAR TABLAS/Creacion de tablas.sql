@@ -330,6 +330,7 @@ CREATE TABLE IF NOT EXISTS sistema_informacion_gerencial.dm_ejecucion_q20
     area_siaf character varying VARCHAR NOT NULL,
     num_certificado VARCHAR NOT NULL,
     fuente_siaf character VARCHAR NOT NULL,
+    generica_siaf VARCHAR NOT NULL,
     idclasificador_siaf VARCHAR NOT NULL,
     clasificador_siaf VARCHAR,
     monto_certificado numeric DEFAULT 0,
